@@ -1,576 +1,544 @@
-<!doctype html>
-<html lang="it" class="h-full">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DevoGame</title>
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
-  <script src="/_sdk/element_sdk.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&amp;family=Rajdhani:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { height: 100%; }
+"<!DOCTYPE html>
+<html lang=\"it\">
+<head>
+<meta charset=\"UTF-8\" />
+<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
+<title>DevoGame — Game Development Studio</title>
+<meta name=\"description\" content=\"DevoGame — Studio di sviluppo videogiochi indipendente. Creiamo mondi digitali con tecnologia all'avanguardia.\" />
+<meta name=\"theme-color\" content=\"#0a0a12\" />
+<meta property=\"og:title\" content=\"DevoGame — Game Development Studio\" />
+<meta property=\"og:description\" content=\"Studio di sviluppo videogiochi indipendente. Trasformiamo idee audaci in esperienze interattive indimenticabili.\" />
+<meta property=\"og:type\" content=\"website\" />
+<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" />
+<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin />
+<link href=\"https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap\" rel=\"stylesheet\" />
+<style>
+:root{--bg:#0a0a12;--surface:#12121f;--surface-2:#181828;--text:#e0e0e8;--muted:#9a9aae;--accent:#00ffaa;--accent-dim:rgba(0,255,170,.12);--line:rgba(0,255,170,.12)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Rajdhani',system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
+a{color:inherit}
+::selection{background:var(--accent);color:var(--bg)}
+img,svg{display:block;max-width:100%}
+.container{max-width:1140px;margin:0 auto}
 
-    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
-    @keyframes pulse-glow { 0%,100%{opacity:.3} 50%{opacity:.7} }
-    @keyframes grid-scroll { 0%{transform:perspective(600px) rotateX(55deg) translateY(0)} 100%{transform:perspective(600px) rotateX(55deg) translateY(80px)} }
-    @keyframes scan-line { 0%{top:-5%} 100%{top:105%} }
-    @keyframes fade-up { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
+/* Background grid + scan line */
+.grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(0,255,170,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,170,.05) 1px,transparent 1px);background-size:50px 50px;pointer-events:none;mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%);-webkit-mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%)}
+.scan-line::after{content:\"\";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,rgba(0,255,170,.5),transparent);animation:scan 6s linear infinite;pointer-events:none}
+@keyframes scan{0%{transform:translateY(0)}100%{transform:translateY(100vh)}}
 
-    .anim-float { animation: float 4s ease-in-out infinite; }
-    .anim-float-d { animation: float 5s ease-in-out 1s infinite; }
-    .anim-glow { animation: pulse-glow 3s ease-in-out infinite; }
-    .fade-up { animation: fade-up .8s ease both; }
-    .fade-up-d1 { animation: fade-up .8s .15s ease both; }
-    .fade-up-d2 { animation: fade-up .8s .3s ease both; }
-    .fade-up-d3 { animation: fade-up .8s .45s ease both; }
-    .fade-up-d4 { animation: fade-up .8s .6s ease both; }
+.float,.float-d,.glow{position:absolute;pointer-events:none}
+.float{animation:float 6s ease-in-out infinite}
+.float-d{animation:float 8s ease-in-out infinite reverse}
+.glow{animation:pulse 4s ease-in-out infinite;filter:blur(2px)}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+@keyframes pulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
 
-    .grid-bg {
-      position: absolute; inset: 0; overflow: hidden; pointer-events: none;
-    }
-    .grid-bg::before {
-      content:''; position:absolute; width:200%; height:200%; left:-50%; top:-50%;
-      background: repeating-linear-gradient(0deg,transparent,transparent 79px,rgba(0,255,170,.06) 79px,rgba(0,255,170,.06) 80px),
-                  repeating-linear-gradient(90deg,transparent,transparent 79px,rgba(0,255,170,.06) 79px,rgba(0,255,170,.06) 80px);
-      animation: grid-scroll 8s linear infinite;
-    }
-    .scan-line::after {
-      content:''; position:absolute; left:0; width:100%; height:2px; top:-5%;
-      background:linear-gradient(90deg,transparent,rgba(0,255,170,.4),transparent);
-      animation: scan-line 4s linear infinite;
-    }
+.fade-up,.fade-up-d1,.fade-up-d2,.fade-up-d3,.fade-up-d4{animation:fadeUp .8s ease both}
+.fade-up-d1{animation-delay:.1s}.fade-up-d2{animation-delay:.25s}.fade-up-d3{animation-delay:.4s}.fade-up-d4{animation-delay:.55s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 
-    .card-hover { transition: transform .3s, box-shadow .3s; }
-    .card-hover:hover { transform: translateY(-6px); box-shadow: 0 0 30px rgba(0,255,170,.15); }
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;z-index:50;transition:background .25s,border-color .25s,backdrop-filter .25s;background:transparent;border-bottom:1px solid transparent}
+.nav.scrolled{background:rgba(10,10,18,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav-inner{max-width:1200px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.logo-mark{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--accent-dim);color:var(--accent);font-family:'Orbitron',sans-serif;font-weight:800;font-size:14px;letter-spacing:.5px;border:1px solid rgba(0,255,170,.25)}
+.logo-text{font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:2px;font-size:14px;text-transform:uppercase}
+.nav-links{display:flex;gap:28px}
+.nav-links a{text-decoration:none;color:var(--text);opacity:.75;font-weight:600;font-size:14px;letter-spacing:.5px;transition:opacity .2s,color .2s}
+.nav-links a:hover{opacity:1;color:var(--accent)}
+.nav-toggle{display:none;background:transparent;border:1px solid var(--line);border-radius:8px;width:40px;height:40px;align-items:center;justify-content:center;color:var(--text);cursor:pointer}
+.nav-mobile{display:none;flex-direction:column;gap:4px;padding:12px 24px 20px;background:rgba(10,10,18,.95);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.nav-mobile.open{display:flex}
+.nav-mobile a{padding:12px 8px;text-decoration:none;color:var(--text);font-weight:600;border-radius:8px}
+.nav-mobile a:hover{background:var(--accent-dim);color:var(--accent)}
+@media(max-width:880px){.nav-links{display:none}.nav-toggle{display:inline-flex}}
 
-    .btn-glow {
-      position:relative; overflow:hidden; transition: all .3s;
-    }
-    .btn-glow::before {
-      content:''; position:absolute; inset:-2px; border-radius:inherit;
-      background:linear-gradient(45deg,transparent,rgba(0,255,170,.3),transparent);
-      opacity:0; transition:opacity .3s;
-    }
-    .btn-glow:hover::before { opacity:1; }
-    .btn-glow:hover { box-shadow: 0 0 25px rgba(0,255,170,.3); }
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:1px;text-decoration:none;cursor:pointer;border:1px solid transparent;transition:transform .15s,box-shadow .25s,background .25s;font-family:inherit}
+.btn:hover{transform:translateY(-2px)}
+.btn-primary{background:var(--accent);color:var(--bg)}
+.btn-primary:hover{box-shadow:0 8px 32px rgba(0,255,170,.35)}
+.btn-ghost{background:transparent;border-color:rgba(0,255,170,.3);color:var(--accent)}
+.btn-ghost:hover{background:var(--accent-dim)}
+.btn-full{width:100%;justify-content:center}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
 
-    .nav-link { position:relative; transition: color .3s; }
-    .nav-link::after {
-      content:''; position:absolute; bottom:-4px; left:0; width:0; height:2px;
-      background:var(--accent); transition:width .3s;
-    }
-    .nav-link:hover::after { width:100%; }
+/* HERO */
+.hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:120px 24px 80px}
+.hero-content{position:relative;z-index:10;text-align:center;max-width:760px;margin:0 auto}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;margin-bottom:24px;border-radius:999px;font-size:11px;letter-spacing:2.5px;font-weight:700;text-transform:uppercase;background:var(--accent-dim);border:1px solid rgba(0,255,170,.25);color:var(--accent)}
+.pill-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:pulse 1.5s ease-in-out infinite}
+.hero-title{font-family:'Orbitron',sans-serif;font-size:clamp(2.2rem,6vw,4.5rem);font-weight:900;line-height:1.1;margin:0;color:var(--text)}
+.hero-title .accent{color:var(--accent)}
+.hero-sub{margin:20px auto 0;max-width:560px;font-size:18px;line-height:1.7;opacity:.75}
+.hero-cta{margin-top:36px;display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
 
-    input:focus, textarea:focus { outline:none; box-shadow: 0 0 0 2px var(--accent); }
+/* Sections */
+.section{position:relative;padding:96px 24px}
+.section-alt{background:var(--surface)}
+.section-head{text-align:center;margin-bottom:64px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
+.h2{font-family:'Orbitron',sans-serif;font-size:clamp(1.9rem,4vw,3rem);font-weight:700;margin:0;color:var(--text)}
+.paragraph{font-size:16px;line-height:1.75;opacity:.82;margin:0}
 
-  </style>
-  <style>body { box-sizing: border-box; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
- </head>
- <body class="h-full" style="--bg:#0a0a12;--surface:#12121f;--text:#e0e0e8;--accent:#00ffaa;--secondary:#1a1a2e;">
-  <div id="app" <section class="video-container">
-  <video autoplay muted loop playsinline>
-    <source src="ciao.mp4" type="video/mp4">
-    Il tuo browser non supporta il tag video.
-  </video>
-  <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
-    <h2 class="text-white text-4xl font-bold tracking-widest uppercase anim-float" style="font-family:'Orbitron',sans-serif;">
-      Benvenuti
-    </h2>
+/* About */
+.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+.about-art{display:flex;justify-content:center;align-items:center;min-height:320px}
+.stats{margin-top:28px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 8px;text-align:center}
+.stat-num{font-family:'Orbitron',sans-serif;font-size:1.85rem;font-weight:900;color:var(--accent)}
+.stat-lbl{margin-top:4px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.65}
+@media(max-width:800px){.about-grid{grid-template-columns:1fr}}
+
+/* Games */
+.games-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+@media(max-width:1000px){.games-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.games-grid{grid-template-columns:1fr}}
+.game-card{background:var(--bg);border:1px solid var(--line);border-radius:18px;overflow:hidden;transition:transform .25s,border-color .25s,box-shadow .25s}
+.game-card:hover{transform:translateY(-6px);border-color:rgba(0,255,170,.4);box-shadow:0 16px 40px rgba(0,255,170,.08)}
+.game-art{height:180px;display:flex;align-items:center;justify-content:center}
+.game-body{padding:22px}
+.game-tag{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.game-title{font-family:'Orbitron',sans-serif;font-size:1.15rem;font-weight:700;margin:0}
+.game-desc{margin:10px 0 0;font-size:14px;line-height:1.6;opacity:.65}
+.game-meta{margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,255,170,.18);font-size:11px;opacity:.55;letter-spacing:.5px}
+
+/* Tech */
+.tech-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+@media(max-width:1000px){.tech-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.tech-grid{grid-template-columns:1fr}}
+.tech-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;transition:transform .25s,border-color .25s}
+.tech-card:hover{transform:translateY(-4px);border-color:rgba(0,255,170,.35)}
+.tech-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.tech-icon{width:36px;height:36px;border-radius:8px;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;color:var(--accent)}
+.tech-title{font-family:'Orbitron',sans-serif;font-weight:700;margin:0;color:var(--text);font-size:1rem}
+.tech-desc{font-size:14px;line-height:1.65;opacity:.72;margin:0}
+
+/* Team */
+.team-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;max-width:640px;margin:0 auto}
+@media(max-width:600px){.team-grid{grid-template-columns:1fr}}
+.team-card{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:28px 16px;text-align:center;transition:transform .25s,border-color .25s}
+.team-card:hover{transform:translateY(-4px);border-color:rgba(0,255,170,.35)}
+.team-avatar{width:84px;height:84px;margin:0 auto 14px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent-dim);color:var(--accent);font-family:'Orbitron',sans-serif;font-weight:800;font-size:28px;letter-spacing:1px;border:1px solid rgba(0,255,170,.3)}
+.team-name{font-family:'Orbitron',sans-serif;font-weight:700;margin:0;font-size:1.05rem}
+.team-role{margin:8px 0 0;font-size:12px;opacity:.65;letter-spacing:.5px}
+
+/* Contact */
+.contact{position:relative;overflow:hidden}
+.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px}
+@media(max-width:800px){.contact-grid{grid-template-columns:1fr}}
+.contact-info{display:flex;flex-direction:column;gap:14px}
+.info-row{display:flex;align-items:center;gap:16px;padding:16px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
+.info-icon{width:42px;height:42px;border-radius:10px;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;color:var(--accent);flex-shrink:0}
+.info-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:.55;font-weight:700}
+.info-value{font-weight:600;margin-top:2px}
+.info-link{color:var(--accent);text-decoration:none;font-weight:600;margin-top:2px;display:inline-block}
+.info-link:hover{text-decoration:underline}
+
+.form{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;display:flex;flex-direction:column;gap:16px}
+.field{display:flex;flex-direction:column}
+.field label{font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:.6;font-weight:700;margin-bottom:8px}
+.field input,.field textarea{width:100%;padding:12px 14px;border-radius:10px;background:var(--bg);border:1px solid rgba(0,255,170,.12);color:var(--text);font-family:inherit;font-size:14px;resize:vertical;transition:border-color .2s,box-shadow .2s}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,255,170,.15)}
+.form-success,.form-error{padding:12px;border-radius:10px;text-align:center;font-size:14px;font-weight:600;display:none}
+.form-success.show,.form-error.show{display:block}
+.form-success{background:rgba(0,255,170,.1);color:var(--accent);border:1px solid rgba(0,255,170,.3)}
+.form-error{background:rgba(255,80,80,.1);color:#ff7070;border:1px solid rgba(255,80,80,.3)}
+
+/* Footer */
+.footer{background:#07070d;border-top:1px solid var(--line);padding:40px 24px 28px}
+.footer-inner{display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center}
+.footer-brand{display:flex;align-items:center;gap:12px}
+.footer-name{font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:1px;font-size:14px}
+.footer-tag{font-size:11px;opacity:.55;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+.footer-links{display:flex;flex-wrap:wrap;gap:18px;justify-content:center}
+.footer-links a{color:var(--text);opacity:.7;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.5px;transition:color .2s,opacity .2s}
+.footer-links a:hover{color:var(--accent);opacity:1}
+.footer-copy{text-align:right;font-size:12px;opacity:.5}
+@media(max-width:800px){.footer-inner{grid-template-columns:1fr;text-align:center}.footer-brand{justify-content:center}.footer-copy{text-align:center}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class=\"nav\" id=\"nav\">
+  <div class=\"nav-inner\">
+    <a href=\"#hero\" class=\"logo\">
+      <span class=\"logo-mark\">DG</span>
+      <span class=\"logo-text\">DevoGame</span>
+    </a>
+    <div class=\"nav-links\">
+      <a href=\"#hero\">Home</a>
+      <a href=\"#about\">Chi Siamo</a>
+      <a href=\"#games\">Giochi</a>
+      <a href=\"#tech\">Tecnologia</a>
+      <a href=\"#team\">Team</a>
+      <a href=\"#contact\">Contatti</a>
+    </div>
+    <button class=\"nav-toggle\" id=\"navToggle\" aria-label=\"Toggle navigation\">
+      <svg id=\"iconMenu\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"4\" y1=\"6\" x2=\"20\" y2=\"6\"/><line x1=\"4\" y1=\"12\" x2=\"20\" y2=\"12\"/><line x1=\"4\" y1=\"18\" x2=\"20\" y2=\"18\"/></svg>
+      <svg id=\"iconClose\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"display:none\"><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/><line x1=\"6\" y1=\"18\" x2=\"18\" y2=\"6\"/></svg>
+    </button>
   </div>
-</section>class="h-full w-full overflow-auto" style="background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;">
-   <!-- NAV -->
-   <nav class="fixed top-0 left-0 w-full z-50 backdrop-blur-md" style="background:rgba(10,10,18,.85);border-bottom:1px solid rgba(0,255,170,.1);">
-    <div class="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-     <a href="#hero" class="flex items-center gap-2" style="font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.4rem;color:var(--accent);text-decoration:none;">
-      <svg width="32" height="32" viewbox="0 0 32 32"><polygon points="16,2 30,10 30,22 16,30 2,22 2,10" fill="none" stroke="currentColor" stroke-width="2" /><polygon points="16,8 24,12 24,20 16,24 8,20 8,12" fill="currentColor" opacity=".3" /><circle cx="16" cy="16" r="3" fill="currentColor" />
-      </svg><span id="nav-name">DevoGame</span> </a>
-     <div class="hidden md:flex items-center gap-8 text-sm font-semibold tracking-wider uppercase">
-      <a href="#about" class="nav-link" style="color:var(--text);text-decoration:none;">Chi Siamo</a> <a href="#games" class="nav-link" style="color:var(--text);text-decoration:none;">Giochi</a> <a href="#tech" class="nav-link" style="color:var(--text);text-decoration:none;">Tecnologia</a> <a href="#team" class="nav-link" style="color:var(--text);text-decoration:none;">Team</a> <a href="#contact" class="nav-link" style="color:var(--text);text-decoration:none;">Contatti</a>
-     </div><button id="mobile-toggle" class="md:hidden" style="color:var(--accent);background:none;border:none;cursor:pointer;"> <i data-lucide="menu" style="width:28px;height:28px;"></i> </button>
-    </div>
-    <div id="mobile-menu" class="hidden md:hidden px-6 pb-4 flex flex-col gap-3 text-sm font-semibold tracking-wider uppercase">
-     <a href="#about" class="nav-link" style="color:var(--text);text-decoration:none;">Chi Siamo</a> <a href="#games" class="nav-link" style="color:var(--text);text-decoration:none;">Giochi</a> <a href="#tech" class="nav-link" style="color:var(--text);text-decoration:none;">Tecnologia</a> <a href="#team" class="nav-link" style="color:var(--text);text-decoration:none;">Team</a> <a href="#contact" class="nav-link" style="color:var(--text);text-decoration:none;">Contatti</a>
-    </div>
-   </nav><!-- HERO -->
-   <section id="hero" class="relative w-full overflow-hidden" style="min-height:100%;display:flex;align-items:center;justify-content:center;">
-    <div class="grid-bg scan-line"></div><!-- Floating shapes -->
-    <div class="anim-float absolute" style="top:15%;left:10%;width:60px;height:60px;border:2px solid rgba(0,255,170,.15);border-radius:12px;transform:rotate(45deg);"></div>
-    <div class="anim-float-d absolute" style="top:25%;right:12%;width:40px;height:40px;border:2px solid rgba(0,255,170,.1);border-radius:50%;"></div>
-    <div class="anim-float absolute" style="bottom:20%;left:20%;width:30px;height:30px;border:2px solid rgba(0,255,170,.1);"></div>
-    <div class="anim-glow absolute" style="top:40%;right:25%;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,170,.08),transparent);"></div>
-    <div class="relative z-10 text-center px-6 max-w-3xl fade-up">
-     <div class="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full text-xs font-bold tracking-widest uppercase" style="background:rgba(0,255,170,.08);border:1px solid rgba(0,255,170,.2);color:var(--accent);">
-      <span class="w-2 h-2 rounded-full anim-glow" style="background:var(--accent);"></span> Game Development Studio
-     </div>
-     <h1 id="hero-title" style="font-family:'Orbitron',sans-serif;font-size:clamp(2.2rem,6vw,4.5rem);font-weight:900;line-height:1.1;color:var(--text);">Creiamo <span style="color:var(--accent);">Mondi</span> Digitali</h1>
-     <p id="hero-subtitle" class="mt-5 text-lg opacity-70 max-w-xl mx-auto" style="font-weight:400;line-height:1.7;">Studio di sviluppo videogiochi indipendente. Trasformiamo idee audaci in esperienze interattive indimenticabili.</p>
-     <div class="mt-8 flex flex-wrap gap-4 justify-center">
-      <a href="#games" class="btn-glow inline-flex items-center gap-2 px-7 py-3 rounded-lg font-bold tracking-wide text-sm" style="background:var(--accent);color:var(--bg);text-decoration:none;"> <i data-lucide="gamepad-2" style="width:18px;height:18px;"></i> I Nostri Giochi </a> <a href="#contact" class="btn-glow inline-flex items-center gap-2 px-7 py-3 rounded-lg font-bold tracking-wide text-sm" style="background:transparent;border:1px solid rgba(0,255,170,.3);color:var(--accent);text-decoration:none;"> <i data-lucide="mail" style="width:18px;height:18px;"></i> Contattaci </a>
-     </div>
-    </div>
-   </section><!-- ABOUT -->
-   <section id="about" class="relative py-24 px-6">
-    <div class="max-w-6xl mx-auto">
-     <div class="text-center mb-16 fade-up">
-      <p class="text-xs font-bold tracking-widest uppercase mb-3" style="color:var(--accent);">La Nostra Missione</p>
-      <h2 id="about-title" style="font-family:'Orbitron',sans-serif;font-size:clamp(1.8rem,4vw,3rem);font-weight:700;color:var(--text);">Chi Siamo</h2>
-     </div>
-     <div class="grid md:grid-cols-2 gap-10 items-center">
-      <div class="fade-up-d1">
-       <p id="about-text" class="text-base leading-relaxed opacity-80">DevoGame è uno studio indipendente fondato con la passione per creare esperienze di gioco innovative e coinvolgenti. Il nostro team di sviluppatori, artisti e designer lavora unito per realizzare mondi digitali che lasciano il segno. Dalla concept art al lancio, ogni dettaglio è curato con dedizione artigianale e tecnologia all'avanguardia.</p>
-       <div class="mt-8 grid grid-cols-3 gap-4 text-center">
-        <div class="p-4 rounded-xl" style="background:var(--surface);border:1px solid rgba(0,255,170,.08);">
-         <div style="font-family:'Orbitron',sans-serif;font-size:1.8rem;font-weight:900;color:var(--accent);">
-          12+
-         </div>
-         <div class="text-xs opacity-60 mt-1 uppercase tracking-wider font-semibold">
-          Progetti
-         </div>
-        </div>
-        <div class="p-4 rounded-xl" style="background:var(--surface);border:1px solid rgba(0,255,170,.08);">
-         <div style="font-family:'Orbitron',sans-serif;font-size:1.8rem;font-weight:900;color:var(--accent);">
-          8
-         </div>
-         <div class="text-xs opacity-60 mt-1 uppercase tracking-wider font-semibold">
-          Sviluppatori
-         </div>
-        </div>
-        <div class="p-4 rounded-xl" style="background:var(--surface);border:1px solid rgba(0,255,170,.08);">
-         <div style="font-family:'Orbitron',sans-serif;font-size:1.8rem;font-weight:900;color:var(--accent);">
-          5+
-         </div>
-         <div class="text-xs opacity-60 mt-1 uppercase tracking-wider font-semibold">
-          Anni
-         </div>
-        </div>
-       </div>
-      </div>
-      <div class="fade-up-d2 relative flex items-center justify-center" style="min-height:300px;">
-       <svg viewbox="0 0 300 300" width="100%" style="max-width:320px;">
-        <defs>
-         <lineargradient id="g1" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="rgba(0,255,170,.2)" />
-          <stop offset="100%" stop-color="rgba(0,255,170,0)" />
-         </lineargradient>
-        </defs> <polygon points="150,20 270,80 270,200 150,260 30,200 30,80" fill="url(#g1)" stroke="rgba(0,255,170,.2)" stroke-width="1.5" /> <polygon points="150,50 240,95 240,185 150,230 60,185 60,95" fill="none" stroke="rgba(0,255,170,.1)" stroke-width="1" /> <polygon points="150,80 210,110 210,170 150,200 90,170 90,110" fill="rgba(0,255,170,.05)" stroke="rgba(0,255,170,.15)" stroke-width="1" /> <circle cx="150" cy="140" r="25" fill="rgba(0,255,170,.1)" stroke="rgba(0,255,170,.3)" stroke-width="1.5" /> <text x="150" y="147" text-anchor="middle" fill="rgba(0,255,170,.8)" font-family="Orbitron" font-size="16" font-weight="700">
-         DG
-        </text>
-       </svg>
-      </div>
-     </div>
-    </div>
-   </section><!-- GAMES -->
-   <section id="games" class="py-24 px-6" style="background:var(--surface);">
-    <div class="max-w-6xl mx-auto">
-     <div class="text-center mb-16 fade-up">
-      <p class="text-xs font-bold tracking-widest uppercase mb-3" style="color:var(--accent);">Portfolio</p>
-      <h2 style="font-family:'Orbitron',sans-serif;font-size:clamp(1.8rem,4vw,3rem);font-weight:700;color:var(--text);">I Nostri Giochi</h2>
-     </div>
-     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      <div class="card-hover rounded-2xl overflow-hidden fade-up-d1" style="background:var(--bg);border:1px solid rgba(0,255,170,.08);">
-       <div class="h-44 flex items-center justify-center" style="background:linear-gradient(135deg,rgba(255,100,50,.1),rgba(255,150,0,.1));">
-        <svg width="64" height="64" viewbox="0 0 64 64"><circle cx="32" cy="28" r="16" fill="none" stroke="rgba(255,120,0,.5)" stroke-width="2" /><path d="M32 12v8M32 44v8M16 28h-8M48 28h8" stroke="rgba(255,120,0,.4)" stroke-width="2" stroke-linecap="round" /><circle cx="32" cy="28" r="6" fill="rgba(255,120,0,.2)" stroke="rgba(255,120,0,.5)" stroke-width="1" />
-        </svg>
-       </div>
-       <div class="p-5">
-        <div class="text-xs font-bold uppercase tracking-wider mb-2" style="color:#ff7700;">
-         Basket · Arcade
-        </div>
-        <h3 style="font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;">Court Blaze</h3>
-        <p class="text-sm opacity-60 mt-2 leading-relaxed">Basket arcade ad alta velocità con tiri spettacolari e sfide multiplayer.</p>
-        <div class="mt-3 pt-3 border-t border-opacity-20" style="border-color:rgba(0,255,170,.2);">
-         <div class="text-xs opacity-50">
-          Ray Tracing ? 4K ? 120fps
-         </div>
-        </div>
-       </div>
-      </div>
-      <div class="card-hover rounded-2xl overflow-hidden fade-up-d2" style="background:var(--bg);border:1px solid rgba(0,255,170,.08);">
-       <div class="h-44 flex items-center justify-center" style="background:linear-gradient(135deg,rgba(50,150,255,.1),rgba(0,200,100,.1));">
-        <svg width="64" height="64" viewbox="0 0 64 64"><circle cx="32" cy="32" r="20" fill="none" stroke="rgba(50,150,255,.3)" stroke-width="1" /><path d="M32 12v8M32 44v8M12 32h8M44 32h8" stroke="rgba(50,150,255,.4)" stroke-width="2" stroke-linecap="round" /><polygon points="32,20 40,28 40,36 32,44 24,36 24,28" fill="rgba(50,150,255,.1)" stroke="rgba(50,150,255,.5)" stroke-width="1.5" />
-        </svg>
-       </div>
-       <div class="p-5">
-        <div class="text-xs font-bold uppercase tracking-wider mb-2" style="color:#00aaff;">
-         Calcio · Simulazione
-        </div>
-        <h3 style="font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;">Goal Nexus</h3>
-        <p class="text-sm opacity-60 mt-2 leading-relaxed">Simulazione calcistica futuristica con tattiche avanzate e IA realistica.</p>
-        <div class="mt-3 pt-3 border-t border-opacity-20" style="border-color:rgba(0,255,170,.2);">
-         <div class="text-xs opacity-50">
-          DLSS 3 ? Unreal Engine 5 ? Physics+
-         </div>
-        </div>
-       </div>
-      </div>
-      <div class="card-hover rounded-2xl overflow-hidden fade-up-d3" style="background:var(--bg);border:1px solid rgba(0,255,170,.08);">
-       <div class="h-44 flex items-center justify-center" style="background:linear-gradient(135deg,rgba(255,200,0,.1),rgba(255,100,100,.1));">
-        <svg width="64" height="64" viewbox="0 0 64 64"><rect x="14" y="18" width="36" height="28" rx="3" fill="none" stroke="rgba(255,150,0,.4)" stroke-width="2" /><line x1="32" y1="18" x2="32" y2="46" stroke="rgba(255,150,0,.3)" stroke-width="1" /><circle cx="24" cy="32" r="5" fill="none" stroke="rgba(255,150,0,.4)" stroke-width="1.5" /><circle cx="40" cy="32" r="5" fill="none" stroke="rgba(255,150,0,.4)" stroke-width="1.5" /><circle cx="32" cy="32" r="3" fill="rgba(255,150,0,.3)" />
-        </svg>
-       </div>
-       <div class="p-5">
-        <div class="text-xs font-bold uppercase tracking-wider mb-2" style="color:#ffaa00;">
-         Tennis · Competizione
-        </div>
-        <h3 style="font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;">Ace Velocity</h3>
-        <p class="text-sm opacity-60 mt-2 leading-relaxed">Tennis veloce con movimenti realistici e motore fisico avanzato.</p>
-        <div class="mt-3 pt-3 border-t border-opacity-20" style="border-color:rgba(0,255,170,.2);">
-         <div class="text-xs opacity-50">
-          Motion Capture ? VR Ready ? Online
-         </div>
-        </div>
-       </div>
-      </div>
-      <div class="card-hover rounded-2xl overflow-hidden fade-up-d1" style="background:var(--bg);border:1px solid rgba(0,255,170,.08);">
-       <div class="h-44 flex items-center justify-center" style="background:linear-gradient(135deg,rgba(150,100,255,.1),rgba(100,200,255,.1));">
-        <svg width="64" height="64" viewbox="0 0 64 64"><path d="M32 12L50 20L50 40L32 48L14 40L14 20Z" fill="none" stroke="rgba(150,120,255,.4)" stroke-width="2" /><circle cx="32" cy="32" r="12" fill="none" stroke="rgba(150,120,255,.5)" stroke-width="1.5" /><path d="M24 32L32 28L40 32L32 36Z" fill="rgba(150,120,255,.2)" stroke="rgba(150,120,255,.4)" stroke-width="1" />
-        </svg>
-       </div>
-       <div class="p-5">
-        <div class="text-xs font-bold uppercase tracking-wider mb-2" style="color:#9966ff;">
-         Sci-Fi · Action
-        </div>
-        <h3 style="font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;">Quantum Strike</h3>
-        <p class="text-sm opacity-60 mt-2 leading-relaxed">Battaglia futuristica con potenziamenti quantici e ambienti dinamici.</p>
-        <div class="mt-3 pt-3 border-t border-opacity-20" style="border-color:rgba(0,255,170,.2);">
-         <div class="text-xs opacity-50">
-          AI avanzata ? Destruction Physics ? Cross-Play
-         </div>
-        </div>
-       </div>
-      </div>
-      <div class="card-hover rounded-2xl overflow-hidden fade-up-d2" style="background:var(--bg);border:1px solid rgba(0,255,170,.08);">
-       <div class="h-44 flex items-center justify-center" style="background:linear-gradient(135deg,rgba(0,200,150,.1),rgba(100,255,200,.1));">
-        <svg width="64" height="64" viewbox="0 0 64 64"><path d="M20 32Q32 16 44 32Q32 48 20 32Z" fill="none" stroke="rgba(0,200,150,.4)" stroke-width="2" /><path d="M28 32Q32 24 36 32Q32 40 28 32Z" fill="rgba(0,200,150,.15)" stroke="rgba(0,200,150,.4)" stroke-width="1" /><circle cx="32" cy="32" r="3" fill="rgba(0,200,150,.6)" />
-        </svg>
-       </div>
-       <div class="p-5">
-        <div class="text-xs font-bold uppercase tracking-wider mb-2" style="color:#00d48c;">
-         Corsa · Simulazione
-        </div>
-        <h3 style="font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;">Velocity Pro</h3>
-        <p class="text-sm opacity-60 mt-2 leading-relaxed">Simulazione di corsa con circuiti realistici e meteorologia dinamica.</p>
-        <div class="mt-3 pt-3 border-t border-opacity-20" style="border-color:rgba(0,255,170,.2);">
-         <div class="text-xs opacity-50">
-          Photogrammetry ? Weather Simulation ? Haptic
-         </div>
-        </div>
-       </div>
-      </div>
-      <div class="card-hover rounded-2xl overflow-hidden fade-up-d3" style="background:var(--bg);border:1px solid rgba(0,255,170,.08);">
-       <div class="h-44 flex items-center justify-center" style="background:linear-gradient(135deg,rgba(255,150,100,.1),rgba(255,200,150,.1));">
-        <svg width="64" height="64" viewbox="0 0 64 64"><path d="M32 16L42 24L44 36L32 44L20 36L22 24Z" fill="none" stroke="rgba(255,170,100,.4)" stroke-width="2" /><path d="M32 20L38 24L39 32L32 36L26 32L27 24Z" fill="rgba(255,170,100,.1)" stroke="rgba(255,170,100,.4)" stroke-width="1" /><circle cx="32" cy="28" r="4" fill="rgba(255,170,100,.2)" />
-        </svg>
-       </div>
-       <div class="p-5">
-        <div class="text-xs font-bold uppercase tracking-wider mb-2" style="color:#ffaa64;">
-         Strategia · Tattica
-        </div>
-        <h3 style="font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;">Empire Wars</h3>
-        <p class="text-sm opacity-60 mt-2 leading-relaxed">Strategia tattica con campagne dinamiche e IA intelligente.</p>
-        <div class="mt-3 pt-3 border-t border-opacity-20" style="border-color:rgba(0,255,170,.2);">
-         <div class="text-xs opacity-50">
-          Procedural Generation ? Deep Learning ? Mod Support
-         </div>
-        </div>
-       </div>
-      </div>
-     </div>
-    </div>
-   </section><!-- TECHNOLOGY -->
-   <section id="tech" class="py-24 px-6">
-    <div class="max-w-6xl mx-auto">
-     <div class="text-center mb-16 fade-up">
-      <p class="text-xs font-bold tracking-widest uppercase mb-3" style="color:var(--accent);">Stack Tecnologico</p>
-      <h2 style="font-family:'Orbitron',sans-serif;font-size:clamp(1.8rem,4vw,3rem);font-weight:700;color:var(--text);">Tecnologia Avanzata</h2>
-     </div>
-     <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-      <div class="p-5 rounded-xl fade-up-d1" style="background:var(--surface);border:1px solid rgba(0,255,170,.08);">
-       <div class="flex items-center gap-3 mb-3">
-        <div class="w-8 h-8 rounded flex items-center justify-center" style="background:rgba(0,255,170,.1);">
-         <i data-lucide="zap" style="width:18px;height:18px;color:var(--accent);"></i>
-        </div>
-        <h3 style="font-family:'Orbitron',sans-serif;font-weight:700;color:var(--text);">Unreal Engine 5</h3>
-       </div>
-       <p class="text-sm opacity-70 leading-relaxed">Grafica photorealistic con Nanite e Lumen per rendering real-time senza compromessi.</p>
-      </div>
-      <div class="p-5 rounded-xl fade-up-d2" style="background:var(--surface);border:1px solid rgba(0,255,170,.08);">
-       <div class="flex items-center gap-3 mb-3">
-        <div class="w-8 h-8 rounded flex items-center justify-center" style="background:rgba(0,255,170,.1);">
-         <i data-lucide="cpu" style="width:18px;height:18px;color:var(--accent);"></i>
-        </div>
-        <h3 style="font-family:'Orbitron',sans-serif;font-weight:700;color:var(--text);">Ray Tracing</h3>
-       </div>
-       <p class="text-sm opacity-70 leading-relaxed">Illuminazione realistica con riflessioni e ombre dinamiche a tempo reale.</p>
-      </div>
-      <div class="p-5 rounded-xl fade-up-d3" style="background:var(--surface);border:1px solid rgba(0,255,170,.08);">
-       <div class="flex items-center gap-3 mb-3">
-        <div class="w-8 h-8 rounded flex items-center justify-center" style="background:rgba(0,255,170,.1);">
-         <i data-lucide="brain" style="width:18px;height:18px;color:var(--accent);"></i>
-        </div>
-        <h3 style="font-family:'Orbitron',sans-serif;font-weight:700;color:var(--text);">IA Avanzata</h3>
-       </div>
-       <p class="text-sm opacity-70 leading-relaxed">Machine Learning per NPC intelligenti e adattamento dinamico al gameplay.</p>
-      </div>
-      <div class="p-5 rounded-xl fade-up-d4" style="background:var(--surface);border:1px solid rgba(0,255,170,.08);">
-       <div class="flex items-center gap-3 mb-3">
-        <div class="w-8 h-8 rounded flex items-center justify-center" style="background:rgba(0,255,170,.1);">
-         <i data-lucide="server" style="width:18px;height:18px;color:var(--accent);"></i>
-        </div>
-        <h3 style="font-family:'Orbitron',sans-serif;font-weight:700;color:var(--text);">Cloud Gaming</h3>
-       </div>
-       <p class="text-sm opacity-70 leading-relaxed">Infrastruttura cloud per streaming 4K@60fps su qualsiasi device.</p>
-      </div>
-     </div>
-    </div>
-   </section><!-- TEAM -->
-   <section id="team" class="py-24 px-6" style="background:var(--surface);">
-    <div class="max-w-6xl mx-auto">
-     <div class="text-center mb-16 fade-up">
-      <p class="text-xs font-bold tracking-widest uppercase mb-3" style="color:var(--accent);">Il Nostro Talento</p>
-      <h2 style="font-family:'Orbitron',sans-serif;font-size:clamp(1.8rem,4vw,3rem);font-weight:700;color:var(--text);">Team Eccezionale</h2>
-     </div>
-     <div class="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-      <div class="text-center fade-up-d1 p-4 rounded-xl" style="background:var(--bg);border:1px solid rgba(0,255,170,.08);">
-       <div class="w-20 h-20 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl font-bold" style="background:rgba(0,255,170,.1);color:var(--accent);">
-        ?????
-       </div>
-       <h3 style="font-family:'Orbitron',sans-serif;font-weight:700;">Daniele Salerno</h3>
-       <p class="text-xs opacity-60 mt-2">Founder &amp; Creative Director</p>
-      </div>
-      <div class="text-center fade-up-d2 p-4 rounded-xl" style="background:var(--bg);border:1px solid rgba(0,255,170,.08);">
-       <div class="w-20 h-20 rounded-full mx-auto mb-3 flex items-center justify-center text-2xl font-bold" style="background:rgba(0,255,170,.1);color:var(--accent);">
-        ?????
-       </div>
-       <h3 style="font-family:'Orbitron',sans-serif;font-weight:700;">Foti Gabriel</h3>
-       <p class="text-xs opacity-60 mt-2">Lead Developer</p>
-      </div>
-     </div>
-    </div>
-   </section>
-   <section id="contact" class="py-24 px-6 relative">
-    <div class="grid-bg" style="opacity:.5;"></div>
-    <div class="max-w-6xl mx-auto relative z-10">
-     <div class="text-center mb-16 fade-up">
-      <p class="text-xs font-bold tracking-widest uppercase mb-3" style="color:var(--accent);">Parliamone</p>
-      <h2 id="contact-title" style="font-family:'Orbitron',sans-serif;font-size:clamp(1.8rem,4vw,3rem);font-weight:700;color:var(--text);">Contattaci</h2>
-     </div>
-     <div class="grid md:grid-cols-2 gap-10">
-      <!-- Info -->
-      <div class="fade-up-d1 space-y-6">
-       <p class="opacity-70 leading-relaxed">Hai un'idea per un progetto? Vuoi collaborare? Scrivici e ti risponderemo il prima possibile.</p>
-       <div class="space-y-4">
-        <div class="flex items-center gap-4 p-4 rounded-xl" style="background:var(--surface);border:1px solid rgba(0,255,170,.08);">
-         <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(0,255,170,.1);">
-          <i data-lucide="mail" style="width:20px;height:20px;color:var(--accent);"></i>
-         </div>
-         <div>
-          <div class="text-xs uppercase tracking-wider opacity-50 font-semibold">
-           Email
-          </div><a id="contact-email-link" href="mailto:devogamesrl@gmail.com" style="color:var(--accent);text-decoration:none;font-weight:600;">devogamesrl@gmail.com</a>
-         </div>
-        </div>
-        <div class="flex items-center gap-4 p-4 rounded-xl" style="background:var(--surface);border:1px solid rgba(0,255,170,.08);">
-         <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(0,255,170,.1);">
-          <i data-lucide="map-pin" style="width:20px;height:20px;color:var(--accent);"></i>
-         </div>
-         <div>
-          <div class="text-xs uppercase tracking-wider opacity-50 font-semibold">
-           Sede
-          </div>
-          <div style="font-weight:600;">
-           Italia
-          </div>
-         </div>
-        </div>
-        <div class="flex items-center gap-4 p-4 rounded-xl" style="background:var(--surface);border:1px solid rgba(0,255,170,.08);">
-         <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background:rgba(0,255,170,.1);">
-          <i data-lucide="clock" style="width:20px;height:20px;color:var(--accent);"></i>
-         </div>
-         <div>
-          <div class="text-xs uppercase tracking-wider opacity-50 font-semibold">
-           Risposta
-          </div>
-          <div style="font-weight:600;">
-           Entro 24-48 ore
-          </div>
-         </div>
-        </div>
-       </div>
-      </div><!-- Form -->
-     <form id="contact-form" action="https://formsubmit.co/devogamesrl@gmail.com" method="POST" class="fade-up-d2 space-y-4 p-6 rounded-2xl" style="background:var(--surface);border:1px solid rgba(0,255,170,.08);">
-   <input type="hidden" name="_subject" value="Nuovo messaggio dal sito DevoGame">
-   <input type="hidden" name="_captcha" value="false">
-   <input type="hidden" name="_template" value="table">
-   <input type="text" name="_honey" style="display:none">
-   <div>
-    <label for="name" class="block text-xs uppercase tracking-wider opacity-50 font-semibold mb-2">Nome</label> <input type="text" id="name" name="name" placeholder="Il tuo nome" required class="w-full px-4 py-3 rounded-lg text-sm" style="background:var(--bg);border:1px solid rgba(0,255,170,.1);color:var(--text);font-family:inherit;">
-   </div>
-   <div>
-    <label for="email" class="block text-xs uppercase tracking-wider opacity-50 font-semibold mb-2">Email</label> <input type="email" id="email" name="email" placeholder="La tua email" required class="w-full px-4 py-3 rounded-lg text-sm" style="background:var(--bg);border:1px solid rgba(0,255,170,.1);color:var(--text);font-family:inherit;">
-   </div>
-   <div>
-    <label for="message" class="block text-xs uppercase tracking-wider opacity-50 font-semibold mb-2">Messaggio</label> <textarea id="message" name="message" rows="4" placeholder="Raccontaci il tuo progetto..." required class="w-full px-4 py-3 rounded-lg text-sm resize-none" style="background:var(--bg);border:1px solid rgba(0,255,170,.1);color:var(--text);font-family:inherit;"></textarea>
-   </div><button type="submit" id="contact-submit-btn" class="btn-glow w-full py-3 rounded-lg font-bold tracking-wide text-sm flex items-center justify-center gap-2" style="background:var(--accent);color:var(--bg);border:none;cursor:pointer;font-family:inherit;"> <i data-lucide="send" style="width:16px;height:16px;"></i> <span id="contact-submit-label">Invia Messaggio</span> </button>
-   <div id="form-success" class="hidden text-center py-3 rounded-lg text-sm font-semibold" style="background:rgba(0,255,170,.1);color:var(--accent);">
-    ? Messaggio inviato! Ti risponderemo presto.
-   </div>
-   <div id="form-error" class="hidden text-center py-3 rounded-lg text-sm font-semibold" style="background:rgba(255,80,80,.1);color:#ff5a5a;">
-    Errore nell'invio. Riprova o scrivici a devogamesrl@gmail.com
-   </div>
-  </form>
-     </div>
-    </div>
-   </section><!-- FOOTER -->
-   <footer class="py-8 px-6 text-center" style="background:var(--surface);border-top:1px solid rgba(0,255,170,.08);">
-    <div class="flex items-center justify-center gap-2 mb-3" style="font-family:'Orbitron',sans-serif;font-weight:700;color:var(--accent);font-size:1rem;">
-     <svg width="20" height="20" viewbox="0 0 32 32"><polygon points="16,2 30,10 30,22 16,30 2,22 2,10" fill="none" stroke="currentColor" stroke-width="2" /><circle cx="16" cy="16" r="3" fill="currentColor" />
-     </svg><span id="footer-name">DevoGame</span>
-    </div>
-    <p class="text-xs opacity-40">© 2025 DevoGame S.r.l. ? Tutti i diritti riservati.</p>
-   </footer>
+  <div class=\"nav-mobile\" id=\"navMobile\">
+    <a href=\"#hero\">Home</a>
+    <a href=\"#about\">Chi Siamo</a>
+    <a href=\"#games\">Giochi</a>
+    <a href=\"#tech\">Tecnologia</a>
+    <a href=\"#team\">Team</a>
+    <a href=\"#contact\">Contatti</a>
   </div>
-  <script>
-    lucide.createIcons();
+</nav>
 
-    // Mobile menu
-    document.getElementById('mobile-toggle').addEventListener('click', () => {
-      document.getElementById('mobile-menu').classList.toggle('hidden');
-    });
-    document.querySelectorAll('#mobile-menu a').forEach(a => {
-      a.addEventListener('click', () => document.getElementById('mobile-menu').classList.add('hidden'));
-    });
+<!-- HERO -->
+<section id=\"hero\" class=\"hero\">
+  <div class=\"grid-bg scan-line\"></div>
+  <div class=\"float\" style=\"top:15%;left:10%;width:60px;height:60px;border:2px solid rgba(0,255,170,.15);border-radius:12px;transform:rotate(45deg)\"></div>
+  <div class=\"float-d\" style=\"top:25%;right:12%;width:40px;height:40px;border:2px solid rgba(0,255,170,.1);border-radius:50%\"></div>
+  <div class=\"float\" style=\"bottom:20%;left:20%;width:30px;height:30px;border:2px solid rgba(0,255,170,.1)\"></div>
+  <div class=\"glow\" style=\"top:40%;right:25%;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,170,.08),transparent)\"></div>
 
-  // Form - invia a FormSubmit.co via AJAX, email ricevuta su devogamesrl@gmail.com
-document.getElementById('contact-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const btn = document.getElementById('contact-submit-btn');
-  const label = document.getElementById('contact-submit-label');
-  const successEl = document.getElementById('form-success');
-  const errorEl = document.getElementById('form-error');
-  successEl.classList.add('hidden');
-  errorEl.classList.add('hidden');
-  const originalLabel = label.textContent;
-  btn.disabled = true;
-  label.textContent = 'Invio in corso...';
-  try {
-    const data = new FormData(form);
-    const res = await fetch('https://formsubmit.co/ajax/devogamesrl@gmail.com', {
-      method: 'POST',
-      headers: { 'Accept': 'application/json' },
-      body: data
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const json = await res.json();
-    if (json && (json.success === 'true' || json.success === true)) {
-      successEl.classList.remove('hidden');
-      form.reset();
-      setTimeout(() => successEl.classList.add('hidden'), 6000);
-    } else {
-      throw new Error('Invio non riuscito');
-    }
-  } catch (err) {
-    errorEl.classList.remove('hidden');
-    setTimeout(() => errorEl.classList.add('hidden'), 6000);
-  } finally {
-    btn.disabled = false;
-    label.textContent = originalLabel;
-  }
+  <div class=\"hero-content fade-up\">
+    <div class=\"pill\"><span class=\"pill-dot\"></span> Game Development Studio</div>
+    <h1 class=\"hero-title\">Creiamo <span class=\"accent\">Mondi</span> Digitali</h1>
+    <p class=\"hero-sub\">Studio di sviluppo videogiochi indipendente. Trasformiamo idee audaci in esperienze interattive indimenticabili.</p>
+    <div class=\"hero-cta\">
+      <a href=\"#games\" class=\"btn btn-primary\">
+        <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"6\" x2=\"10\" y1=\"11\" y2=\"11\"/><line x1=\"8\" x2=\"8\" y1=\"9\" y2=\"13\"/><line x1=\"15\" x2=\"15.01\" y1=\"12\" y2=\"12\"/><line x1=\"18\" x2=\"18.01\" y1=\"10\" y2=\"10\"/><path d=\"M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z\"/></svg>
+        I Nostri Giochi
+      </a>
+      <a href=\"#contact\" class=\"btn btn-ghost\">
+        <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"20\" height=\"16\" x=\"2\" y=\"4\" rx=\"2\"/><path d=\"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\"/></svg>
+        Contattaci
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id=\"about\" class=\"section\">
+  <div class=\"container\">
+    <div class=\"section-head fade-up\">
+      <p class=\"eyebrow\">La Nostra Missione</p>
+      <h2 class=\"h2\">Chi Siamo</h2>
+    </div>
+    <div class=\"about-grid\">
+      <div class=\"fade-up-d1\">
+        <p class=\"paragraph\">DevoGame è uno studio indipendente fondato con la passione per creare esperienze di gioco innovative e coinvolgenti. Il nostro team di sviluppatori, artisti e designer lavora unito per realizzare mondi digitali che lasciano il segno. Dalla concept art al lancio, ogni dettaglio è curato con dedizione artigianale e tecnologia all'avanguardia.</p>
+        <div class=\"stats\">
+          <div class=\"stat\"><div class=\"stat-num\">12+</div><div class=\"stat-lbl\">Progetti</div></div>
+          <div class=\"stat\"><div class=\"stat-num\">8</div><div class=\"stat-lbl\">Sviluppatori</div></div>
+          <div class=\"stat\"><div class=\"stat-num\">5+</div><div class=\"stat-lbl\">Anni</div></div>
+        </div>
+      </div>
+      <div class=\"fade-up-d2 about-art\">
+        <svg viewBox=\"0 0 300 300\" width=\"100%\" style=\"max-width:320px\">
+          <defs>
+            <linearGradient id=\"g1\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">
+              <stop offset=\"0%\" stop-color=\"rgba(0,255,170,.2)\"/>
+              <stop offset=\"100%\" stop-color=\"rgba(0,255,170,0)\"/>
+            </linearGradient>
+          </defs>
+          <polygon points=\"150,20 270,80 270,200 150,260 30,200 30,80\" fill=\"url(#g1)\" stroke=\"rgba(0,255,170,.2)\" stroke-width=\"1.5\"/>
+          <polygon points=\"150,50 240,95 240,185 150,230 60,185 60,95\" fill=\"none\" stroke=\"rgba(0,255,170,.1)\" stroke-width=\"1\"/>
+          <polygon points=\"150,80 210,110 210,170 150,200 90,170 90,110\" fill=\"rgba(0,255,170,.05)\" stroke=\"rgba(0,255,170,.15)\" stroke-width=\"1\"/>
+          <circle cx=\"150\" cy=\"140\" r=\"25\" fill=\"rgba(0,255,170,.1)\" stroke=\"rgba(0,255,170,.3)\" stroke-width=\"1.5\"/>
+          <text x=\"150\" y=\"147\" text-anchor=\"middle\" fill=\"rgba(0,255,170,.9)\" font-family=\"Orbitron\" font-size=\"16\" font-weight=\"700\">DG</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- GAMES -->
+<section id=\"games\" class=\"section section-alt\">
+  <div class=\"container\">
+    <div class=\"section-head fade-up\">
+      <p class=\"eyebrow\">Portfolio</p>
+      <h2 class=\"h2\">I Nostri Giochi</h2>
+    </div>
+    <div class=\"games-grid\">
+      <div class=\"game-card fade-up-d1\">
+        <div class=\"game-art\" style=\"background:linear-gradient(135deg,rgba(255,100,50,.12),rgba(255,150,0,.12))\">
+          <svg width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><circle cx=\"32\" cy=\"28\" r=\"16\" fill=\"none\" stroke=\"rgba(255,120,0,.5)\" stroke-width=\"2\"/><path d=\"M32 12v8M32 44v8M16 28h-8M48 28h8\" stroke=\"rgba(255,120,0,.4)\" stroke-width=\"2\" stroke-linecap=\"round\"/><circle cx=\"32\" cy=\"28\" r=\"6\" fill=\"rgba(255,120,0,.2)\" stroke=\"rgba(255,120,0,.5)\" stroke-width=\"1\"/></svg>
+        </div>
+        <div class=\"game-body\">
+          <div class=\"game-tag\" style=\"color:#ff7700\">Basket · Arcade</div>
+          <h3 class=\"game-title\">Court Blaze</h3>
+          <p class=\"game-desc\">Basket arcade ad alta velocità con tiri spettacolari e sfide multiplayer.</p>
+          <div class=\"game-meta\">Ray Tracing · 4K · 120fps</div>
+        </div>
+      </div>
+
+      <div class=\"game-card fade-up-d2\">
+        <div class=\"game-art\" style=\"background:linear-gradient(135deg,rgba(50,150,255,.12),rgba(0,200,100,.12))\">
+          <svg width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><circle cx=\"32\" cy=\"32\" r=\"20\" fill=\"none\" stroke=\"rgba(50,150,255,.3)\" stroke-width=\"1\"/><path d=\"M32 12v8M32 44v8M12 32h8M44 32h8\" stroke=\"rgba(50,150,255,.4)\" stroke-width=\"2\" stroke-linecap=\"round\"/><polygon points=\"32,20 40,28 40,36 32,44 24,36 24,28\" fill=\"rgba(50,150,255,.1)\" stroke=\"rgba(50,150,255,.5)\" stroke-width=\"1.5\"/></svg>
+        </div>
+        <div class=\"game-body\">
+          <div class=\"game-tag\" style=\"color:#00aaff\">Calcio · Simulazione</div>
+          <h3 class=\"game-title\">Goal Nexus</h3>
+          <p class=\"game-desc\">Simulazione calcistica futuristica con tattiche avanzate e IA realistica.</p>
+          <div class=\"game-meta\">DLSS 3 · Unreal Engine 5 · Physics+</div>
+        </div>
+      </div>
+
+      <div class=\"game-card fade-up-d3\">
+        <div class=\"game-art\" style=\"background:linear-gradient(135deg,rgba(255,200,0,.12),rgba(255,100,100,.12))\">
+          <svg width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><rect x=\"14\" y=\"18\" width=\"36\" height=\"28\" rx=\"3\" fill=\"none\" stroke=\"rgba(255,150,0,.4)\" stroke-width=\"2\"/><line x1=\"32\" y1=\"18\" x2=\"32\" y2=\"46\" stroke=\"rgba(255,150,0,.3)\" stroke-width=\"1\"/><circle cx=\"24\" cy=\"32\" r=\"5\" fill=\"none\" stroke=\"rgba(255,150,0,.4)\" stroke-width=\"1.5\"/><circle cx=\"40\" cy=\"32\" r=\"5\" fill=\"none\" stroke=\"rgba(255,150,0,.4)\" stroke-width=\"1.5\"/><circle cx=\"32\" cy=\"32\" r=\"3\" fill=\"rgba(255,150,0,.3)\"/></svg>
+        </div>
+        <div class=\"game-body\">
+          <div class=\"game-tag\" style=\"color:#ffaa00\">Tennis · Competizione</div>
+          <h3 class=\"game-title\">Ace Velocity</h3>
+          <p class=\"game-desc\">Tennis veloce con movimenti realistici e motore fisico avanzato.</p>
+          <div class=\"game-meta\">Motion Capture · VR Ready · Online</div>
+        </div>
+      </div>
+
+      <div class=\"game-card fade-up-d1\">
+        <div class=\"game-art\" style=\"background:linear-gradient(135deg,rgba(150,100,255,.12),rgba(100,200,255,.12))\">
+          <svg width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><path d=\"M32 12L50 20L50 40L32 48L14 40L14 20Z\" fill=\"none\" stroke=\"rgba(150,120,255,.4)\" stroke-width=\"2\"/><circle cx=\"32\" cy=\"32\" r=\"12\" fill=\"none\" stroke=\"rgba(150,120,255,.5)\" stroke-width=\"1.5\"/><path d=\"M24 32L32 28L40 32L32 36Z\" fill=\"rgba(150,120,255,.2)\" stroke=\"rgba(150,120,255,.4)\" stroke-width=\"1\"/></svg>
+        </div>
+        <div class=\"game-body\">
+          <div class=\"game-tag\" style=\"color:#9966ff\">Sci-Fi · Action</div>
+          <h3 class=\"game-title\">Quantum Strike</h3>
+          <p class=\"game-desc\">Battaglia futuristica con potenziamenti quantici e ambienti dinamici.</p>
+          <div class=\"game-meta\">AI avanzata · Destruction Physics · Cross-Play</div>
+        </div>
+      </div>
+
+      <div class=\"game-card fade-up-d2\">
+        <div class=\"game-art\" style=\"background:linear-gradient(135deg,rgba(0,200,150,.12),rgba(100,255,200,.12))\">
+          <svg width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><path d=\"M20 32Q32 16 44 32Q32 48 20 32Z\" fill=\"none\" stroke=\"rgba(0,200,150,.4)\" stroke-width=\"2\"/><path d=\"M28 32Q32 24 36 32Q32 40 28 32Z\" fill=\"rgba(0,200,150,.15)\" stroke=\"rgba(0,200,150,.4)\" stroke-width=\"1\"/><circle cx=\"32\" cy=\"32\" r=\"3\" fill=\"rgba(0,200,150,.6)\"/></svg>
+        </div>
+        <div class=\"game-body\">
+          <div class=\"game-tag\" style=\"color:#00d48c\">Corsa · Simulazione</div>
+          <h3 class=\"game-title\">Velocity Pro</h3>
+          <p class=\"game-desc\">Simulazione di corsa con circuiti realistici e meteorologia dinamica.</p>
+          <div class=\"game-meta\">Photogrammetry · Weather Simulation · Haptic</div>
+        </div>
+      </div>
+
+      <div class=\"game-card fade-up-d3\">
+        <div class=\"game-art\" style=\"background:linear-gradient(135deg,rgba(255,150,100,.12),rgba(255,200,150,.12))\">
+          <svg width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><path d=\"M32 16L42 24L44 36L32 44L20 36L22 24Z\" fill=\"none\" stroke=\"rgba(255,170,100,.4)\" stroke-width=\"2\"/><path d=\"M32 20L38 24L39 32L32 36L26 32L27 24Z\" fill=\"rgba(255,170,100,.1)\" stroke=\"rgba(255,170,100,.4)\" stroke-width=\"1\"/><circle cx=\"32\" cy=\"28\" r=\"4\" fill=\"rgba(255,170,100,.2)\"/></svg>
+        </div>
+        <div class=\"game-body\">
+          <div class=\"game-tag\" style=\"color:#ffaa64\">Strategia · Tattica</div>
+          <h3 class=\"game-title\">Empire Wars</h3>
+          <p class=\"game-desc\">Strategia tattica con campagne dinamiche e IA intelligente.</p>
+          <div class=\"game-meta\">Procedural Generation · Deep Learning · Mod Support</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH -->
+<section id=\"tech\" class=\"section\">
+  <div class=\"container\">
+    <div class=\"section-head fade-up\">
+      <p class=\"eyebrow\">Stack Tecnologico</p>
+      <h2 class=\"h2\">Tecnologia Avanzata</h2>
+    </div>
+    <div class=\"tech-grid\">
+      <div class=\"tech-card fade-up-d1\">
+        <div class=\"tech-head\">
+          <div class=\"tech-icon\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polygon points=\"13 2 3 14 12 14 11 22 21 10 12 10 13 2\"/></svg></div>
+          <h3 class=\"tech-title\">Unreal Engine 5</h3>
+        </div>
+        <p class=\"tech-desc\">Grafica fotorealistica con Nanite e Lumen per rendering real-time senza compromessi.</p>
+      </div>
+      <div class=\"tech-card fade-up-d2\">
+        <div class=\"tech-head\">
+          <div class=\"tech-icon\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"4\" width=\"16\" height=\"16\" rx=\"2\"/><rect x=\"9\" y=\"9\" width=\"6\" height=\"6\"/><path d=\"M15 2v2\"/><path d=\"M15 20v2\"/><path d=\"M2 15h2\"/><path d=\"M2 9h2\"/><path d=\"M20 15h2\"/><path d=\"M20 9h2\"/><path d=\"M9 2v2\"/><path d=\"M9 20v2\"/></svg></div>
+          <h3 class=\"tech-title\">Ray Tracing</h3>
+        </div>
+        <p class=\"tech-desc\">Illuminazione realistica con riflessioni e ombre dinamiche a tempo reale.</p>
+      </div>
+      <div class=\"tech-card fade-up-d3\">
+        <div class=\"tech-head\">
+          <div class=\"tech-icon\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z\"/><path d=\"M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z\"/></svg></div>
+          <h3 class=\"tech-title\">IA Avanzata</h3>
+        </div>
+        <p class=\"tech-desc\">Machine Learning per NPC intelligenti e adattamento dinamico al gameplay.</p>
+      </div>
+      <div class=\"tech-card fade-up-d4\">
+        <div class=\"tech-head\">
+          <div class=\"tech-icon\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"20\" height=\"8\" x=\"2\" y=\"2\" rx=\"2\" ry=\"2\"/><rect width=\"20\" height=\"8\" x=\"2\" y=\"14\" rx=\"2\" ry=\"2\"/><line x1=\"6\" x2=\"6.01\" y1=\"6\" y2=\"6\"/><line x1=\"6\" x2=\"6.01\" y1=\"18\" y2=\"18\"/></svg></div>
+          <h3 class=\"tech-title\">Cloud Gaming</h3>
+        </div>
+        <p class=\"tech-desc\">Infrastruttura cloud per streaming 4K@60fps su qualsiasi device.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section id=\"team\" class=\"section section-alt\">
+  <div class=\"container\">
+    <div class=\"section-head fade-up\">
+      <p class=\"eyebrow\">Il Nostro Talento</p>
+      <h2 class=\"h2\">Team Eccezionale</h2>
+    </div>
+    <div class=\"team-grid\">
+      <div class=\"team-card fade-up-d1\">
+        <div class=\"team-avatar\">DS</div>
+        <h3 class=\"team-name\">Daniele Salerno</h3>
+        <p class=\"team-role\">Founder &amp; Creative Director</p>
+      </div>
+      <div class=\"team-card fade-up-d2\">
+        <div class=\"team-avatar\">FG</div>
+        <h3 class=\"team-name\">Foti Gabriel</h3>
+        <p class=\"team-role\">Lead Developer</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id=\"contact\" class=\"section contact\">
+  <div class=\"grid-bg\" style=\"opacity:.5\"></div>
+  <div class=\"container\" style=\"position:relative;z-index:10\">
+    <div class=\"section-head fade-up\">
+      <p class=\"eyebrow\">Parliamone</p>
+      <h2 class=\"h2\">Contattaci</h2>
+    </div>
+    <div class=\"contact-grid\">
+      <div class=\"fade-up-d1\">
+        <p class=\"paragraph\" style=\"margin-bottom:24px\">Hai un'idea per un progetto? Vuoi collaborare? Scrivici e ti risponderemo il prima possibile.</p>
+        <div class=\"contact-info\">
+          <div class=\"info-row\">
+            <div class=\"info-icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"20\" height=\"16\" x=\"2\" y=\"4\" rx=\"2\"/><path d=\"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\"/></svg></div>
+            <div>
+              <div class=\"info-label\">Email</div>
+              <a class=\"info-link\" href=\"mailto:devogamesrl@gmail.com\">devogamesrl@gmail.com</a>
+            </div>
+          </div>
+          <div class=\"info-row\">
+            <div class=\"info-icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/></svg></div>
+            <div>
+              <div class=\"info-label\">Sede</div>
+              <div class=\"info-value\">Italia</div>
+            </div>
+          </div>
+          <div class=\"info-row\">
+            <div class=\"info-icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><polyline points=\"12 6 12 12 16 14\"/></svg></div>
+            <div>
+              <div class=\"info-label\">Risposta</div>
+              <div class=\"info-value\">Entro 24-48 ore</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <form class=\"form fade-up-d2\" id=\"contactForm\" action=\"https://formsubmit.co/ajax/devogamesrl@gmail.com\" method=\"POST\">
+        <input type=\"text\" name=\"_honey\" style=\"display:none\" />
+        <div class=\"field\">
+          <label for=\"name\">Nome</label>
+          <input type=\"text\" id=\"name\" name=\"name\" placeholder=\"Il tuo nome\" required />
+        </div>
+        <div class=\"field\">
+          <label for=\"email\">Email</label>
+          <input type=\"email\" id=\"email\" name=\"email\" placeholder=\"La tua email\" required />
+        </div>
+        <div class=\"field\">
+          <label for=\"message\">Messaggio</label>
+          <textarea id=\"message\" name=\"message\" rows=\"4\" placeholder=\"Raccontaci il tuo progetto...\" required></textarea>
+        </div>
+        <button type=\"submit\" class=\"btn btn-primary btn-full\" id=\"submitBtn\">
+          <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m22 2-7 20-4-9-9-4Z\"/><path d=\"M22 2 11 13\"/></svg>
+          <span id=\"submitLabel\">Invia Messaggio</span>
+        </button>
+        <div class=\"form-success\" id=\"formSuccess\">✓ Messaggio inviato! Ti risponderemo presto.</div>
+        <div class=\"form-error\" id=\"formError\">Errore nell'invio. Riprova o scrivici a devogamesrl@gmail.com</div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class=\"footer\">
+  <div class=\"container footer-inner\">
+    <div class=\"footer-brand\">
+      <span class=\"logo-mark\">DG</span>
+      <div>
+        <div class=\"footer-name\">DevoGame S.r.l.</div>
+        <div class=\"footer-tag\">Game Development Studio</div>
+      </div>
+    </div>
+    <div class=\"footer-links\">
+      <a href=\"#hero\">Home</a>
+      <a href=\"#about\">Chi Siamo</a>
+      <a href=\"#games\">Giochi</a>
+      <a href=\"#tech\">Tecnologia</a>
+      <a href=\"#team\">Team</a>
+      <a href=\"#contact\">Contatti</a>
+    </div>
+    <div class=\"footer-copy\">© <span id=\"year\"></span> DevoGame S.r.l. — Tutti i diritti riservati.</div>
+  </div>
+</footer>
+
+<script>
+// Year
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// Nav scroll effect
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 20) nav.classList.add('scrolled');
+  else nav.classList.remove('scrolled');
 });
 
-    // Element SDK
-    const defaultConfig = {
-      background_color: '#0a0a12',
-      surface_color: '#12121f',
-      text_color: '#e0e0e8',
-      accent_color: '#00ffaa',
-      secondary_color: '#1a1a2e',
-      font_family: 'Rajdhani',
-      font_size: 16,
-      company_name: 'DevoGame',
-      hero_title: 'Creiamo Mondi Digitali',
-      hero_subtitle: 'Studio di sviluppo videogiochi indipendente. Trasformiamo idee audaci in esperienze interattive indimenticabili.',
-      about_title: 'Chi Siamo',
-      about_text: 'DevoGame è uno studio indipendente fondato con la passione per creare esperienze di gioco innovative e coinvolgenti. Il nostro team di sviluppatori, artisti e designer lavora unito per realizzare mondi digitali che lasciano il segno. Dalla concept art al lancio, ogni dettaglio è curato con dedizione artigianale e tecnologia all\'avanguardia.',
-      contact_title: 'Contattaci',
-      contact_email: 'devogamesrl@gmail.com'
-    };
+// Mobile menu toggle
+const navToggle = document.getElementById('navToggle');
+const navMobile = document.getElementById('navMobile');
+const iconMenu = document.getElementById('iconMenu');
+const iconClose = document.getElementById('iconClose');
+navToggle.addEventListener('click', () => {
+  const open = navMobile.classList.toggle('open');
+  iconMenu.style.display = open ? 'none' : 'block';
+  iconClose.style.display = open ? 'block' : 'none';
+});
+navMobile.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+  navMobile.classList.remove('open');
+  iconMenu.style.display = 'block';
+  iconClose.style.display = 'none';
+}));
 
-    function applyConfig(c) {
-      const app = document.getElementById('app');
-      app.style.setProperty('--bg', c.background_color || defaultConfig.background_color);
-      app.style.setProperty('--surface', c.surface_color || defaultConfig.surface_color);
-      app.style.setProperty('--text', c.text_color || defaultConfig.text_color);
-      app.style.setProperty('--accent', c.accent_color || defaultConfig.accent_color);
-      app.style.setProperty('--secondary', c.secondary_color || defaultConfig.secondary_color);
-      app.style.color = c.text_color || defaultConfig.text_color;
+// Form submit (FormSubmit AJAX)
+const form = document.getElementById('contactForm');
+const submitBtn = document.getElementById('submitBtn');
+const submitLabel = document.getElementById('submitLabel');
+const formSuccess = document.getElementById('formSuccess');
+const formError = document.getElementById('formError');
 
-      const font = c.font_family || defaultConfig.font_family;
-      const baseSize = c.font_size || defaultConfig.font_size;
-      app.style.fontFamily = `${font}, Rajdhani, sans-serif`;
-
-      const name = c.company_name || defaultConfig.company_name;
-      document.getElementById('nav-name').textContent = name;
-      document.getElementById('footer-name').textContent = name;
-
-      const ht = c.hero_title || defaultConfig.hero_title;
-      const words = ht.split(' ');
-      const mid = Math.ceil(words.length / 2);
-      document.getElementById('hero-title').innerHTML = words.slice(0, mid).join(' ') + ' <span style="color:var(--accent);">' + words.slice(mid).join(' ') + '</span>';
-
-      document.getElementById('hero-subtitle').textContent = c.hero_subtitle || defaultConfig.hero_subtitle;
-      document.getElementById('about-title').textContent = c.about_title || defaultConfig.about_title;
-      document.getElementById('about-text').textContent = c.about_text || defaultConfig.about_text;
-      document.getElementById('contact-title').textContent = c.contact_title || defaultConfig.contact_title;
-
-      const email = c.contact_email || defaultConfig.contact_email;
-      const emailLink = document.getElementById('contact-email-link');
-      emailLink.href = 'mailto:' + email;
-      emailLink.textContent = email;
-
-      // Font sizing
-      document.getElementById('hero-title').style.fontSize = `${baseSize * 2.8}px`;
-      document.getElementById('hero-subtitle').style.fontSize = `${baseSize * 1.1}px`;
-      document.getElementById('about-title').style.fontSize = `${baseSize * 1.9}px`;
-      document.getElementById('about-text').style.fontSize = `${baseSize}px`;
-      document.getElementById('contact-title').style.fontSize = `${baseSize * 1.9}px`;
-    }
-
-    window.elementSdk.init({
-      defaultConfig,
-      onConfigChange: async (config) => { applyConfig(config); },
-      mapToCapabilities: (config) => ({
-        recolorables: [
-          { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
-          { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
-          { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
-          { get: () => config.accent_color || defaultConfig.accent_color, set: (v) => { config.accent_color = v; window.elementSdk.setConfig({ accent_color: v }); } },
-          { get: () => config.secondary_color || defaultConfig.secondary_color, set: (v) => { config.secondary_color = v; window.elementSdk.setConfig({ secondary_color: v }); } },
-        ],
-        borderables: [],
-        fontEditable: {
-          get: () => config.font_family || defaultConfig.font_family,
-          set: (v) => { config.font_family = v; window.elementSdk.setConfig({ font_family: v }); }
-        },
-        fontSizeable: {
-          get: () => config.font_size || defaultConfig.font_size,
-          set: (v) => { config.font_size = v; window.elementSdk.setConfig({ font_size: v }); }
-        }
-      }),
-      mapToEditPanelValues: (config) => new Map([
-        ['company_name', config.company_name || defaultConfig.company_name],
-        ['hero_title', config.hero_title || defaultConfig.hero_title],
-        ['hero_subtitle', config.hero_subtitle || defaultConfig.hero_subtitle],
-        ['about_title', config.about_title || defaultConfig.about_title],
-        ['about_text', config.about_text || defaultConfig.about_text],
-        ['contact_title', config.contact_title || defaultConfig.contact_title],
-        ['contact_email', config.contact_email || defaultConfig.contact_email],
-      ])
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  formSuccess.classList.remove('show');
+  formError.classList.remove('show');
+  submitBtn.disabled = true;
+  submitLabel.textContent = 'Invio in corso...';
+  try {
+    const res = await fetch(form.action, {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: new FormData(form)
     });
-  </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9eca7396d19eedd6',t:'MTc3NjI1MDg3OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+    if (res.ok) {
+      formSuccess.classList.add('show');
+      form.reset();
+    } else {
+      formError.classList.add('show');
+    }
+  } catch {
+    formError.classList.add('show');
+  } finally {
+    submitBtn.disabled = false;
+    submitLabel.textContent = 'Invia Messaggio';
+  }
+});
+</script>
+</body>
 </html>
+"
