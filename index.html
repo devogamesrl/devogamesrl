@@ -1,544 +1,552 @@
-"<!DOCTYPE html>
-<html lang=\"it\">
-<head>
-<meta charset=\"UTF-8\" />
-<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />
-<title>DevoGame — Game Development Studio</title>
-<meta name=\"description\" content=\"DevoGame — Studio di sviluppo videogiochi indipendente. Creiamo mondi digitali con tecnologia all'avanguardia.\" />
-<meta name=\"theme-color\" content=\"#0a0a12\" />
-<meta property=\"og:title\" content=\"DevoGame — Game Development Studio\" />
-<meta property=\"og:description\" content=\"Studio di sviluppo videogiochi indipendente. Trasformiamo idee audaci in esperienze interattive indimenticabili.\" />
-<meta property=\"og:type\" content=\"website\" />
-<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\" />
-<link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin />
-<link href=\"https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap\" rel=\"stylesheet\" />
-<style>
-:root{--bg:#0a0a12;--surface:#12121f;--surface-2:#181828;--text:#e0e0e8;--muted:#9a9aae;--accent:#00ffaa;--accent-dim:rgba(0,255,170,.12);--line:rgba(0,255,170,.12)}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Rajdhani',system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
-a{color:inherit}
-::selection{background:var(--accent);color:var(--bg)}
-img,svg{display:block;max-width:100%}
-.container{max-width:1140px;margin:0 auto}
+MONGO_URL="mongodb://localhost:27017"
+DB_NAME="test_database"
+CORS_ORIGINS="*"
+RESEND_API_KEY="re_KhTLubqs_4taxTY3RC6RUPQRUqmRTKsoY"
+SENDER_EMAIL="onboarding@resend.dev"
+RECIPIENT_EMAIL="devogamesrl@gmail.com"
+/app/backend/server.py
+from fastapi import FastAPI, APIRouter, HTTPException
+from dotenv import load_dotenv
+from starlette.middleware.cors import CORSMiddleware
+from motor.motor_asyncio import AsyncIOMotorClient
+import os
+import asyncio
+import logging
+from pathlib import Path
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from typing import List
+import uuid
+from datetime import datetime, timezone
+import resend
 
-/* Background grid + scan line */
-.grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(0,255,170,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,170,.05) 1px,transparent 1px);background-size:50px 50px;pointer-events:none;mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%);-webkit-mask-image:radial-gradient(ellipse at center,#000 30%,transparent 75%)}
-.scan-line::after{content:\"\";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,rgba(0,255,170,.5),transparent);animation:scan 6s linear infinite;pointer-events:none}
-@keyframes scan{0%{transform:translateY(0)}100%{transform:translateY(100vh)}}
 
-.float,.float-d,.glow{position:absolute;pointer-events:none}
-.float{animation:float 6s ease-in-out infinite}
-.float-d{animation:float 8s ease-in-out infinite reverse}
-.glow{animation:pulse 4s ease-in-out infinite;filter:blur(2px)}
-@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
-@keyframes pulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+ROOT_DIR = Path(__file__).parent
+load_dotenv(ROOT_DIR / '.env')
 
-.fade-up,.fade-up-d1,.fade-up-d2,.fade-up-d3,.fade-up-d4{animation:fadeUp .8s ease both}
-.fade-up-d1{animation-delay:.1s}.fade-up-d2{animation-delay:.25s}.fade-up-d3{animation-delay:.4s}.fade-up-d4{animation-delay:.55s}
-@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+# MongoDB connection
+mongo_url = os.environ['MONGO_URL']
+client = AsyncIOMotorClient(mongo_url)
+db = client[os.environ['DB_NAME']]
 
-/* NAV */
-.nav{position:fixed;top:0;left:0;right:0;z-index:50;transition:background .25s,border-color .25s,backdrop-filter .25s;background:transparent;border-bottom:1px solid transparent}
-.nav.scrolled{background:rgba(10,10,18,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-.nav-inner{max-width:1200px;margin:0 auto;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;gap:24px}
-.logo{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
-.logo-mark{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:var(--accent-dim);color:var(--accent);font-family:'Orbitron',sans-serif;font-weight:800;font-size:14px;letter-spacing:.5px;border:1px solid rgba(0,255,170,.25)}
-.logo-text{font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:2px;font-size:14px;text-transform:uppercase}
-.nav-links{display:flex;gap:28px}
-.nav-links a{text-decoration:none;color:var(--text);opacity:.75;font-weight:600;font-size:14px;letter-spacing:.5px;transition:opacity .2s,color .2s}
-.nav-links a:hover{opacity:1;color:var(--accent)}
-.nav-toggle{display:none;background:transparent;border:1px solid var(--line);border-radius:8px;width:40px;height:40px;align-items:center;justify-content:center;color:var(--text);cursor:pointer}
-.nav-mobile{display:none;flex-direction:column;gap:4px;padding:12px 24px 20px;background:rgba(10,10,18,.95);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-.nav-mobile.open{display:flex}
-.nav-mobile a{padding:12px 8px;text-decoration:none;color:var(--text);font-weight:600;border-radius:8px}
-.nav-mobile a:hover{background:var(--accent-dim);color:var(--accent)}
-@media(max-width:880px){.nav-links{display:none}.nav-toggle{display:inline-flex}}
+# Resend setup
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
+RECIPIENT_EMAIL = os.environ.get('RECIPIENT_EMAIL', 'devogamesrl@gmail.com')
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
 
-/* Buttons */
-.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 26px;border-radius:10px;font-weight:700;font-size:14px;letter-spacing:1px;text-decoration:none;cursor:pointer;border:1px solid transparent;transition:transform .15s,box-shadow .25s,background .25s;font-family:inherit}
-.btn:hover{transform:translateY(-2px)}
-.btn-primary{background:var(--accent);color:var(--bg)}
-.btn-primary:hover{box-shadow:0 8px 32px rgba(0,255,170,.35)}
-.btn-ghost{background:transparent;border-color:rgba(0,255,170,.3);color:var(--accent)}
-.btn-ghost:hover{background:var(--accent-dim)}
-.btn-full{width:100%;justify-content:center}
-.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+# Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+)
+logger = logging.getLogger(__name__)
 
-/* HERO */
-.hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:120px 24px 80px}
-.hero-content{position:relative;z-index:10;text-align:center;max-width:760px;margin:0 auto}
-.pill{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;margin-bottom:24px;border-radius:999px;font-size:11px;letter-spacing:2.5px;font-weight:700;text-transform:uppercase;background:var(--accent-dim);border:1px solid rgba(0,255,170,.25);color:var(--accent)}
-.pill-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:pulse 1.5s ease-in-out infinite}
-.hero-title{font-family:'Orbitron',sans-serif;font-size:clamp(2.2rem,6vw,4.5rem);font-weight:900;line-height:1.1;margin:0;color:var(--text)}
-.hero-title .accent{color:var(--accent)}
-.hero-sub{margin:20px auto 0;max-width:560px;font-size:18px;line-height:1.7;opacity:.75}
-.hero-cta{margin-top:36px;display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+# Create the main app without a prefix
+app = FastAPI()
+api_router = APIRouter(prefix="/api")
 
-/* Sections */
-.section{position:relative;padding:96px 24px}
-.section-alt{background:var(--surface)}
-.section-head{text-align:center;margin-bottom:64px}
-.eyebrow{font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin:0 0 12px}
-.h2{font-family:'Orbitron',sans-serif;font-size:clamp(1.9rem,4vw,3rem);font-weight:700;margin:0;color:var(--text)}
-.paragraph{font-size:16px;line-height:1.75;opacity:.82;margin:0}
 
-/* About */
-.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
-.about-art{display:flex;justify-content:center;align-items:center;min-height:320px}
-.stats{margin-top:28px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 8px;text-align:center}
-.stat-num{font-family:'Orbitron',sans-serif;font-size:1.85rem;font-weight:900;color:var(--accent)}
-.stat-lbl{margin-top:4px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;opacity:.65}
-@media(max-width:800px){.about-grid{grid-template-columns:1fr}}
+# Models
+class StatusCheck(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    client_name: str
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-/* Games */
-.games-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
-@media(max-width:1000px){.games-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:640px){.games-grid{grid-template-columns:1fr}}
-.game-card{background:var(--bg);border:1px solid var(--line);border-radius:18px;overflow:hidden;transition:transform .25s,border-color .25s,box-shadow .25s}
-.game-card:hover{transform:translateY(-6px);border-color:rgba(0,255,170,.4);box-shadow:0 16px 40px rgba(0,255,170,.08)}
-.game-art{height:180px;display:flex;align-items:center;justify-content:center}
-.game-body{padding:22px}
-.game-tag{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
-.game-title{font-family:'Orbitron',sans-serif;font-size:1.15rem;font-weight:700;margin:0}
-.game-desc{margin:10px 0 0;font-size:14px;line-height:1.6;opacity:.65}
-.game-meta{margin-top:14px;padding-top:12px;border-top:1px solid rgba(0,255,170,.18);font-size:11px;opacity:.55;letter-spacing:.5px}
 
-/* Tech */
-.tech-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
-@media(max-width:1000px){.tech-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:600px){.tech-grid{grid-template-columns:1fr}}
-.tech-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;transition:transform .25s,border-color .25s}
-.tech-card:hover{transform:translateY(-4px);border-color:rgba(0,255,170,.35)}
-.tech-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.tech-icon{width:36px;height:36px;border-radius:8px;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;color:var(--accent)}
-.tech-title{font-family:'Orbitron',sans-serif;font-weight:700;margin:0;color:var(--text);font-size:1rem}
-.tech-desc{font-size:14px;line-height:1.65;opacity:.72;margin:0}
+class StatusCheckCreate(BaseModel):
+    client_name: str
 
-/* Team */
-.team-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;max-width:640px;margin:0 auto}
-@media(max-width:600px){.team-grid{grid-template-columns:1fr}}
-.team-card{background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:28px 16px;text-align:center;transition:transform .25s,border-color .25s}
-.team-card:hover{transform:translateY(-4px);border-color:rgba(0,255,170,.35)}
-.team-avatar{width:84px;height:84px;margin:0 auto 14px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent-dim);color:var(--accent);font-family:'Orbitron',sans-serif;font-weight:800;font-size:28px;letter-spacing:1px;border:1px solid rgba(0,255,170,.3)}
-.team-name{font-family:'Orbitron',sans-serif;font-weight:700;margin:0;font-size:1.05rem}
-.team-role{margin:8px 0 0;font-size:12px;opacity:.65;letter-spacing:.5px}
 
-/* Contact */
-.contact{position:relative;overflow:hidden}
-.contact-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px}
-@media(max-width:800px){.contact-grid{grid-template-columns:1fr}}
-.contact-info{display:flex;flex-direction:column;gap:14px}
-.info-row{display:flex;align-items:center;gap:16px;padding:16px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
-.info-icon{width:42px;height:42px;border-radius:10px;background:var(--accent-dim);display:flex;align-items:center;justify-content:center;color:var(--accent);flex-shrink:0}
-.info-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:.55;font-weight:700}
-.info-value{font-weight:600;margin-top:2px}
-.info-link{color:var(--accent);text-decoration:none;font-weight:600;margin-top:2px;display:inline-block}
-.info-link:hover{text-decoration:underline}
+class ContactCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=120)
+    email: EmailStr
+    subject: str = Field(default="Messaggio dal sito", max_length=200)
+    message: str = Field(..., min_length=1, max_length=5000)
 
-.form{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px;display:flex;flex-direction:column;gap:16px}
-.field{display:flex;flex-direction:column}
-.field label{font-size:11px;letter-spacing:2px;text-transform:uppercase;opacity:.6;font-weight:700;margin-bottom:8px}
-.field input,.field textarea{width:100%;padding:12px 14px;border-radius:10px;background:var(--bg);border:1px solid rgba(0,255,170,.12);color:var(--text);font-family:inherit;font-size:14px;resize:vertical;transition:border-color .2s,box-shadow .2s}
-.field input:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,255,170,.15)}
-.form-success,.form-error{padding:12px;border-radius:10px;text-align:center;font-size:14px;font-weight:600;display:none}
-.form-success.show,.form-error.show{display:block}
-.form-success{background:rgba(0,255,170,.1);color:var(--accent);border:1px solid rgba(0,255,170,.3)}
-.form-error{background:rgba(255,80,80,.1);color:#ff7070;border:1px solid rgba(255,80,80,.3)}
 
-/* Footer */
-.footer{background:#07070d;border-top:1px solid var(--line);padding:40px 24px 28px}
-.footer-inner{display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center}
-.footer-brand{display:flex;align-items:center;gap:12px}
-.footer-name{font-family:'Orbitron',sans-serif;font-weight:700;letter-spacing:1px;font-size:14px}
-.footer-tag{font-size:11px;opacity:.55;letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
-.footer-links{display:flex;flex-wrap:wrap;gap:18px;justify-content:center}
-.footer-links a{color:var(--text);opacity:.7;text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.5px;transition:color .2s,opacity .2s}
-.footer-links a:hover{color:var(--accent);opacity:1}
-.footer-copy{text-align:right;font-size:12px;opacity:.5}
-@media(max-width:800px){.footer-inner{grid-template-columns:1fr;text-align:center}.footer-brand{justify-content:center}.footer-copy{text-align:center}}
-</style>
-</head>
-<body>
+class ContactResponse(BaseModel):
+    id: str
+    status: str
+    email_sent: bool
+    message: str
 
-<!-- NAV -->
-<nav class=\"nav\" id=\"nav\">
-  <div class=\"nav-inner\">
-    <a href=\"#hero\" class=\"logo\">
-      <span class=\"logo-mark\">DG</span>
-      <span class=\"logo-text\">DevoGame</span>
-    </a>
-    <div class=\"nav-links\">
-      <a href=\"#hero\">Home</a>
-      <a href=\"#about\">Chi Siamo</a>
-      <a href=\"#games\">Giochi</a>
-      <a href=\"#tech\">Tecnologia</a>
-      <a href=\"#team\">Team</a>
-      <a href=\"#contact\">Contatti</a>
-    </div>
-    <button class=\"nav-toggle\" id=\"navToggle\" aria-label=\"Toggle navigation\">
-      <svg id=\"iconMenu\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"4\" y1=\"6\" x2=\"20\" y2=\"6\"/><line x1=\"4\" y1=\"12\" x2=\"20\" y2=\"12\"/><line x1=\"4\" y1=\"18\" x2=\"20\" y2=\"18\"/></svg>
-      <svg id=\"iconClose\" width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" style=\"display:none\"><line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"/><line x1=\"6\" y1=\"18\" x2=\"18\" y2=\"6\"/></svg>
-    </button>
-  </div>
-  <div class=\"nav-mobile\" id=\"navMobile\">
-    <a href=\"#hero\">Home</a>
-    <a href=\"#about\">Chi Siamo</a>
-    <a href=\"#games\">Giochi</a>
-    <a href=\"#tech\">Tecnologia</a>
-    <a href=\"#team\">Team</a>
-    <a href=\"#contact\">Contatti</a>
-  </div>
-</nav>
 
-<!-- HERO -->
-<section id=\"hero\" class=\"hero\">
-  <div class=\"grid-bg scan-line\"></div>
-  <div class=\"float\" style=\"top:15%;left:10%;width:60px;height:60px;border:2px solid rgba(0,255,170,.15);border-radius:12px;transform:rotate(45deg)\"></div>
-  <div class=\"float-d\" style=\"top:25%;right:12%;width:40px;height:40px;border:2px solid rgba(0,255,170,.1);border-radius:50%\"></div>
-  <div class=\"float\" style=\"bottom:20%;left:20%;width:30px;height:30px;border:2px solid rgba(0,255,170,.1)\"></div>
-  <div class=\"glow\" style=\"top:40%;right:25%;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,170,.08),transparent)\"></div>
+def _build_html(name: str, email: str, subject: str, message: str) -> str:
+    safe_msg = message.replace('\n', '<br>')
+    return f"""
+    <!DOCTYPE html>
+    <html>
+      <body style="font-family: Arial, sans-serif; background:#050505; padding:24px; color:#ffffff;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px; margin:auto; background:#111111; border:1px solid #2979FF;">
+          <tr>
+            <td style="padding:24px; border-bottom:1px solid #2979FF;">
+              <h1 style="margin:0; color:#2979FF; font-size:22px; letter-spacing:2px;">DEVOGAME &mdash; NUOVO MESSAGGIO</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:24px; color:#ffffff;">
+              <p style="margin:0 0 8px 0;"><strong style="color:#2979FF;">Nome:</strong> {name}</p>
+              <p style="margin:0 0 8px 0;"><strong style="color:#2979FF;">Email:</strong> {email}</p>
+              <p style="margin:0 0 16px 0;"><strong style="color:#2979FF;">Oggetto:</strong> {subject}</p>
+              <hr style="border:none; border-top:1px solid #2979FF; margin:16px 0;">
+              <p style="margin:0; line-height:1.6; color:#e5e5e5;">{safe_msg}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 24px; border-top:1px solid #2979FF; color:#777; font-size:12px;">
+              Inviato dal form di contatto &mdash; devogame.com
+            </td>
+          </tr>
+        </table>
+      </body>
+    </html>
+    """
 
-  <div class=\"hero-content fade-up\">
-    <div class=\"pill\"><span class=\"pill-dot\"></span> Game Development Studio</div>
-    <h1 class=\"hero-title\">Creiamo <span class=\"accent\">Mondi</span> Digitali</h1>
-    <p class=\"hero-sub\">Studio di sviluppo videogiochi indipendente. Trasformiamo idee audaci in esperienze interattive indimenticabili.</p>
-    <div class=\"hero-cta\">
-      <a href=\"#games\" class=\"btn btn-primary\">
-        <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"6\" x2=\"10\" y1=\"11\" y2=\"11\"/><line x1=\"8\" x2=\"8\" y1=\"9\" y2=\"13\"/><line x1=\"15\" x2=\"15.01\" y1=\"12\" y2=\"12\"/><line x1=\"18\" x2=\"18.01\" y1=\"10\" y2=\"10\"/><path d=\"M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z\"/></svg>
-        I Nostri Giochi
-      </a>
-      <a href=\"#contact\" class=\"btn btn-ghost\">
-        <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"20\" height=\"16\" x=\"2\" y=\"4\" rx=\"2\"/><path d=\"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\"/></svg>
-        Contattaci
-      </a>
-    </div>
-  </div>
-</section>
 
-<!-- ABOUT -->
-<section id=\"about\" class=\"section\">
-  <div class=\"container\">
-    <div class=\"section-head fade-up\">
-      <p class=\"eyebrow\">La Nostra Missione</p>
-      <h2 class=\"h2\">Chi Siamo</h2>
-    </div>
-    <div class=\"about-grid\">
-      <div class=\"fade-up-d1\">
-        <p class=\"paragraph\">DevoGame è uno studio indipendente fondato con la passione per creare esperienze di gioco innovative e coinvolgenti. Il nostro team di sviluppatori, artisti e designer lavora unito per realizzare mondi digitali che lasciano il segno. Dalla concept art al lancio, ogni dettaglio è curato con dedizione artigianale e tecnologia all'avanguardia.</p>
-        <div class=\"stats\">
-          <div class=\"stat\"><div class=\"stat-num\">12+</div><div class=\"stat-lbl\">Progetti</div></div>
-          <div class=\"stat\"><div class=\"stat-num\">8</div><div class=\"stat-lbl\">Sviluppatori</div></div>
-          <div class=\"stat\"><div class=\"stat-num\">5+</div><div class=\"stat-lbl\">Anni</div></div>
-        </div>
-      </div>
-      <div class=\"fade-up-d2 about-art\">
-        <svg viewBox=\"0 0 300 300\" width=\"100%\" style=\"max-width:320px\">
-          <defs>
-            <linearGradient id=\"g1\" x1=\"0\" y1=\"0\" x2=\"1\" y2=\"1\">
-              <stop offset=\"0%\" stop-color=\"rgba(0,255,170,.2)\"/>
-              <stop offset=\"100%\" stop-color=\"rgba(0,255,170,0)\"/>
-            </linearGradient>
-          </defs>
-          <polygon points=\"150,20 270,80 270,200 150,260 30,200 30,80\" fill=\"url(#g1)\" stroke=\"rgba(0,255,170,.2)\" stroke-width=\"1.5\"/>
-          <polygon points=\"150,50 240,95 240,185 150,230 60,185 60,95\" fill=\"none\" stroke=\"rgba(0,255,170,.1)\" stroke-width=\"1\"/>
-          <polygon points=\"150,80 210,110 210,170 150,200 90,170 90,110\" fill=\"rgba(0,255,170,.05)\" stroke=\"rgba(0,255,170,.15)\" stroke-width=\"1\"/>
-          <circle cx=\"150\" cy=\"140\" r=\"25\" fill=\"rgba(0,255,170,.1)\" stroke=\"rgba(0,255,170,.3)\" stroke-width=\"1.5\"/>
-          <text x=\"150\" y=\"147\" text-anchor=\"middle\" fill=\"rgba(0,255,170,.9)\" font-family=\"Orbitron\" font-size=\"16\" font-weight=\"700\">DG</text>
-        </svg>
-      </div>
-    </div>
-  </div>
-</section>
+# Routes
+@api_router.get("/")
+async def root():
+    return {"message": "DevoGame API is running"}
 
-<!-- GAMES -->
-<section id=\"games\" class=\"section section-alt\">
-  <div class=\"container\">
-    <div class=\"section-head fade-up\">
-      <p class=\"eyebrow\">Portfolio</p>
-      <h2 class=\"h2\">I Nostri Giochi</h2>
-    </div>
-    <div class=\"games-grid\">
-      <div class=\"game-card fade-up-d1\">
-        <div class=\"game-art\" style=\"background:linear-gradient(135deg,rgba(255,100,50,.12),rgba(255,150,0,.12))\">
-          <svg width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><circle cx=\"32\" cy=\"28\" r=\"16\" fill=\"none\" stroke=\"rgba(255,120,0,.5)\" stroke-width=\"2\"/><path d=\"M32 12v8M32 44v8M16 28h-8M48 28h8\" stroke=\"rgba(255,120,0,.4)\" stroke-width=\"2\" stroke-linecap=\"round\"/><circle cx=\"32\" cy=\"28\" r=\"6\" fill=\"rgba(255,120,0,.2)\" stroke=\"rgba(255,120,0,.5)\" stroke-width=\"1\"/></svg>
-        </div>
-        <div class=\"game-body\">
-          <div class=\"game-tag\" style=\"color:#ff7700\">Basket · Arcade</div>
-          <h3 class=\"game-title\">Court Blaze</h3>
-          <p class=\"game-desc\">Basket arcade ad alta velocità con tiri spettacolari e sfide multiplayer.</p>
-          <div class=\"game-meta\">Ray Tracing · 4K · 120fps</div>
-        </div>
-      </div>
 
-      <div class=\"game-card fade-up-d2\">
-        <div class=\"game-art\" style=\"background:linear-gradient(135deg,rgba(50,150,255,.12),rgba(0,200,100,.12))\">
-          <svg width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><circle cx=\"32\" cy=\"32\" r=\"20\" fill=\"none\" stroke=\"rgba(50,150,255,.3)\" stroke-width=\"1\"/><path d=\"M32 12v8M32 44v8M12 32h8M44 32h8\" stroke=\"rgba(50,150,255,.4)\" stroke-width=\"2\" stroke-linecap=\"round\"/><polygon points=\"32,20 40,28 40,36 32,44 24,36 24,28\" fill=\"rgba(50,150,255,.1)\" stroke=\"rgba(50,150,255,.5)\" stroke-width=\"1.5\"/></svg>
-        </div>
-        <div class=\"game-body\">
-          <div class=\"game-tag\" style=\"color:#00aaff\">Calcio · Simulazione</div>
-          <h3 class=\"game-title\">Goal Nexus</h3>
-          <p class=\"game-desc\">Simulazione calcistica futuristica con tattiche avanzate e IA realistica.</p>
-          <div class=\"game-meta\">DLSS 3 · Unreal Engine 5 · Physics+</div>
-        </div>
-      </div>
+@api_router.post("/status", response_model=StatusCheck)
+async def create_status_check(input: StatusCheckCreate):
+    status_obj = StatusCheck(**input.model_dump())
+    doc = status_obj.model_dump()
+    doc['timestamp'] = doc['timestamp'].isoformat()
+    await db.status_checks.insert_one(doc)
+    return status_obj
 
-      <div class=\"game-card fade-up-d3\">
-        <div class=\"game-art\" style=\"background:linear-gradient(135deg,rgba(255,200,0,.12),rgba(255,100,100,.12))\">
-          <svg width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><rect x=\"14\" y=\"18\" width=\"36\" height=\"28\" rx=\"3\" fill=\"none\" stroke=\"rgba(255,150,0,.4)\" stroke-width=\"2\"/><line x1=\"32\" y1=\"18\" x2=\"32\" y2=\"46\" stroke=\"rgba(255,150,0,.3)\" stroke-width=\"1\"/><circle cx=\"24\" cy=\"32\" r=\"5\" fill=\"none\" stroke=\"rgba(255,150,0,.4)\" stroke-width=\"1.5\"/><circle cx=\"40\" cy=\"32\" r=\"5\" fill=\"none\" stroke=\"rgba(255,150,0,.4)\" stroke-width=\"1.5\"/><circle cx=\"32\" cy=\"32\" r=\"3\" fill=\"rgba(255,150,0,.3)\"/></svg>
-        </div>
-        <div class=\"game-body\">
-          <div class=\"game-tag\" style=\"color:#ffaa00\">Tennis · Competizione</div>
-          <h3 class=\"game-title\">Ace Velocity</h3>
-          <p class=\"game-desc\">Tennis veloce con movimenti realistici e motore fisico avanzato.</p>
-          <div class=\"game-meta\">Motion Capture · VR Ready · Online</div>
-        </div>
-      </div>
 
-      <div class=\"game-card fade-up-d1\">
-        <div class=\"game-art\" style=\"background:linear-gradient(135deg,rgba(150,100,255,.12),rgba(100,200,255,.12))\">
-          <svg width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><path d=\"M32 12L50 20L50 40L32 48L14 40L14 20Z\" fill=\"none\" stroke=\"rgba(150,120,255,.4)\" stroke-width=\"2\"/><circle cx=\"32\" cy=\"32\" r=\"12\" fill=\"none\" stroke=\"rgba(150,120,255,.5)\" stroke-width=\"1.5\"/><path d=\"M24 32L32 28L40 32L32 36Z\" fill=\"rgba(150,120,255,.2)\" stroke=\"rgba(150,120,255,.4)\" stroke-width=\"1\"/></svg>
-        </div>
-        <div class=\"game-body\">
-          <div class=\"game-tag\" style=\"color:#9966ff\">Sci-Fi · Action</div>
-          <h3 class=\"game-title\">Quantum Strike</h3>
-          <p class=\"game-desc\">Battaglia futuristica con potenziamenti quantici e ambienti dinamici.</p>
-          <div class=\"game-meta\">AI avanzata · Destruction Physics · Cross-Play</div>
-        </div>
-      </div>
+@api_router.get("/status", response_model=List[StatusCheck])
+async def get_status_checks():
+    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
+    for check in status_checks:
+        if isinstance(check['timestamp'], str):
+            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
+    return status_checks
 
-      <div class=\"game-card fade-up-d2\">
-        <div class=\"game-art\" style=\"background:linear-gradient(135deg,rgba(0,200,150,.12),rgba(100,255,200,.12))\">
-          <svg width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><path d=\"M20 32Q32 16 44 32Q32 48 20 32Z\" fill=\"none\" stroke=\"rgba(0,200,150,.4)\" stroke-width=\"2\"/><path d=\"M28 32Q32 24 36 32Q32 40 28 32Z\" fill=\"rgba(0,200,150,.15)\" stroke=\"rgba(0,200,150,.4)\" stroke-width=\"1\"/><circle cx=\"32\" cy=\"32\" r=\"3\" fill=\"rgba(0,200,150,.6)\"/></svg>
-        </div>
-        <div class=\"game-body\">
-          <div class=\"game-tag\" style=\"color:#00d48c\">Corsa · Simulazione</div>
-          <h3 class=\"game-title\">Velocity Pro</h3>
-          <p class=\"game-desc\">Simulazione di corsa con circuiti realistici e meteorologia dinamica.</p>
-          <div class=\"game-meta\">Photogrammetry · Weather Simulation · Haptic</div>
-        </div>
-      </div>
 
-      <div class=\"game-card fade-up-d3\">
-        <div class=\"game-art\" style=\"background:linear-gradient(135deg,rgba(255,150,100,.12),rgba(255,200,150,.12))\">
-          <svg width=\"64\" height=\"64\" viewBox=\"0 0 64 64\"><path d=\"M32 16L42 24L44 36L32 44L20 36L22 24Z\" fill=\"none\" stroke=\"rgba(255,170,100,.4)\" stroke-width=\"2\"/><path d=\"M32 20L38 24L39 32L32 36L26 32L27 24Z\" fill=\"rgba(255,170,100,.1)\" stroke=\"rgba(255,170,100,.4)\" stroke-width=\"1\"/><circle cx=\"32\" cy=\"28\" r=\"4\" fill=\"rgba(255,170,100,.2)\"/></svg>
-        </div>
-        <div class=\"game-body\">
-          <div class=\"game-tag\" style=\"color:#ffaa64\">Strategia · Tattica</div>
-          <h3 class=\"game-title\">Empire Wars</h3>
-          <p class=\"game-desc\">Strategia tattica con campagne dinamiche e IA intelligente.</p>
-          <div class=\"game-meta\">Procedural Generation · Deep Learning · Mod Support</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- TECH -->
-<section id=\"tech\" class=\"section\">
-  <div class=\"container\">
-    <div class=\"section-head fade-up\">
-      <p class=\"eyebrow\">Stack Tecnologico</p>
-      <h2 class=\"h2\">Tecnologia Avanzata</h2>
-    </div>
-    <div class=\"tech-grid\">
-      <div class=\"tech-card fade-up-d1\">
-        <div class=\"tech-head\">
-          <div class=\"tech-icon\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polygon points=\"13 2 3 14 12 14 11 22 21 10 12 10 13 2\"/></svg></div>
-          <h3 class=\"tech-title\">Unreal Engine 5</h3>
-        </div>
-        <p class=\"tech-desc\">Grafica fotorealistica con Nanite e Lumen per rendering real-time senza compromessi.</p>
-      </div>
-      <div class=\"tech-card fade-up-d2\">
-        <div class=\"tech-head\">
-          <div class=\"tech-icon\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"4\" width=\"16\" height=\"16\" rx=\"2\"/><rect x=\"9\" y=\"9\" width=\"6\" height=\"6\"/><path d=\"M15 2v2\"/><path d=\"M15 20v2\"/><path d=\"M2 15h2\"/><path d=\"M2 9h2\"/><path d=\"M20 15h2\"/><path d=\"M20 9h2\"/><path d=\"M9 2v2\"/><path d=\"M9 20v2\"/></svg></div>
-          <h3 class=\"tech-title\">Ray Tracing</h3>
-        </div>
-        <p class=\"tech-desc\">Illuminazione realistica con riflessioni e ombre dinamiche a tempo reale.</p>
-      </div>
-      <div class=\"tech-card fade-up-d3\">
-        <div class=\"tech-head\">
-          <div class=\"tech-icon\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z\"/><path d=\"M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z\"/></svg></div>
-          <h3 class=\"tech-title\">IA Avanzata</h3>
-        </div>
-        <p class=\"tech-desc\">Machine Learning per NPC intelligenti e adattamento dinamico al gameplay.</p>
-      </div>
-      <div class=\"tech-card fade-up-d4\">
-        <div class=\"tech-head\">
-          <div class=\"tech-icon\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"20\" height=\"8\" x=\"2\" y=\"2\" rx=\"2\" ry=\"2\"/><rect width=\"20\" height=\"8\" x=\"2\" y=\"14\" rx=\"2\" ry=\"2\"/><line x1=\"6\" x2=\"6.01\" y1=\"6\" y2=\"6\"/><line x1=\"6\" x2=\"6.01\" y1=\"18\" y2=\"18\"/></svg></div>
-          <h3 class=\"tech-title\">Cloud Gaming</h3>
-        </div>
-        <p class=\"tech-desc\">Infrastruttura cloud per streaming 4K@60fps su qualsiasi device.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- TEAM -->
-<section id=\"team\" class=\"section section-alt\">
-  <div class=\"container\">
-    <div class=\"section-head fade-up\">
-      <p class=\"eyebrow\">Il Nostro Talento</p>
-      <h2 class=\"h2\">Team Eccezionale</h2>
-    </div>
-    <div class=\"team-grid\">
-      <div class=\"team-card fade-up-d1\">
-        <div class=\"team-avatar\">DS</div>
-        <h3 class=\"team-name\">Daniele Salerno</h3>
-        <p class=\"team-role\">Founder &amp; Creative Director</p>
-      </div>
-      <div class=\"team-card fade-up-d2\">
-        <div class=\"team-avatar\">FG</div>
-        <h3 class=\"team-name\">Foti Gabriel</h3>
-        <p class=\"team-role\">Lead Developer</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- CONTACT -->
-<section id=\"contact\" class=\"section contact\">
-  <div class=\"grid-bg\" style=\"opacity:.5\"></div>
-  <div class=\"container\" style=\"position:relative;z-index:10\">
-    <div class=\"section-head fade-up\">
-      <p class=\"eyebrow\">Parliamone</p>
-      <h2 class=\"h2\">Contattaci</h2>
-    </div>
-    <div class=\"contact-grid\">
-      <div class=\"fade-up-d1\">
-        <p class=\"paragraph\" style=\"margin-bottom:24px\">Hai un'idea per un progetto? Vuoi collaborare? Scrivici e ti risponderemo il prima possibile.</p>
-        <div class=\"contact-info\">
-          <div class=\"info-row\">
-            <div class=\"info-icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"20\" height=\"16\" x=\"2\" y=\"4\" rx=\"2\"/><path d=\"m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7\"/></svg></div>
-            <div>
-              <div class=\"info-label\">Email</div>
-              <a class=\"info-link\" href=\"mailto:devogamesrl@gmail.com\">devogamesrl@gmail.com</a>
-            </div>
-          </div>
-          <div class=\"info-row\">
-            <div class=\"info-icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z\"/><circle cx=\"12\" cy=\"10\" r=\"3\"/></svg></div>
-            <div>
-              <div class=\"info-label\">Sede</div>
-              <div class=\"info-value\">Italia</div>
-            </div>
-          </div>
-          <div class=\"info-row\">
-            <div class=\"info-icon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><polyline points=\"12 6 12 12 16 14\"/></svg></div>
-            <div>
-              <div class=\"info-label\">Risposta</div>
-              <div class=\"info-value\">Entro 24-48 ore</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <form class=\"form fade-up-d2\" id=\"contactForm\" action=\"https://formsubmit.co/ajax/devogamesrl@gmail.com\" method=\"POST\">
-        <input type=\"text\" name=\"_honey\" style=\"display:none\" />
-        <div class=\"field\">
-          <label for=\"name\">Nome</label>
-          <input type=\"text\" id=\"name\" name=\"name\" placeholder=\"Il tuo nome\" required />
-        </div>
-        <div class=\"field\">
-          <label for=\"email\">Email</label>
-          <input type=\"email\" id=\"email\" name=\"email\" placeholder=\"La tua email\" required />
-        </div>
-        <div class=\"field\">
-          <label for=\"message\">Messaggio</label>
-          <textarea id=\"message\" name=\"message\" rows=\"4\" placeholder=\"Raccontaci il tuo progetto...\" required></textarea>
-        </div>
-        <button type=\"submit\" class=\"btn btn-primary btn-full\" id=\"submitBtn\">
-          <svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m22 2-7 20-4-9-9-4Z\"/><path d=\"M22 2 11 13\"/></svg>
-          <span id=\"submitLabel\">Invia Messaggio</span>
-        </button>
-        <div class=\"form-success\" id=\"formSuccess\">✓ Messaggio inviato! Ti risponderemo presto.</div>
-        <div class=\"form-error\" id=\"formError\">Errore nell'invio. Riprova o scrivici a devogamesrl@gmail.com</div>
-      </form>
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer class=\"footer\">
-  <div class=\"container footer-inner\">
-    <div class=\"footer-brand\">
-      <span class=\"logo-mark\">DG</span>
-      <div>
-        <div class=\"footer-name\">DevoGame S.r.l.</div>
-        <div class=\"footer-tag\">Game Development Studio</div>
-      </div>
-    </div>
-    <div class=\"footer-links\">
-      <a href=\"#hero\">Home</a>
-      <a href=\"#about\">Chi Siamo</a>
-      <a href=\"#games\">Giochi</a>
-      <a href=\"#tech\">Tecnologia</a>
-      <a href=\"#team\">Team</a>
-      <a href=\"#contact\">Contatti</a>
-    </div>
-    <div class=\"footer-copy\">© <span id=\"year\"></span> DevoGame S.r.l. — Tutti i diritti riservati.</div>
-  </div>
-</footer>
-
-<script>
-// Year
-document.getElementById('year').textContent = new Date().getFullYear();
-
-// Nav scroll effect
-const nav = document.getElementById('nav');
-window.addEventListener('scroll', () => {
-  if (window.scrollY > 20) nav.classList.add('scrolled');
-  else nav.classList.remove('scrolled');
-});
-
-// Mobile menu toggle
-const navToggle = document.getElementById('navToggle');
-const navMobile = document.getElementById('navMobile');
-const iconMenu = document.getElementById('iconMenu');
-const iconClose = document.getElementById('iconClose');
-navToggle.addEventListener('click', () => {
-  const open = navMobile.classList.toggle('open');
-  iconMenu.style.display = open ? 'none' : 'block';
-  iconClose.style.display = open ? 'block' : 'none';
-});
-navMobile.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
-  navMobile.classList.remove('open');
-  iconMenu.style.display = 'block';
-  iconClose.style.display = 'none';
-}));
-
-// Form submit (FormSubmit AJAX)
-const form = document.getElementById('contactForm');
-const submitBtn = document.getElementById('submitBtn');
-const submitLabel = document.getElementById('submitLabel');
-const formSuccess = document.getElementById('formSuccess');
-const formError = document.getElementById('formError');
-
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  formSuccess.classList.remove('show');
-  formError.classList.remove('show');
-  submitBtn.disabled = true;
-  submitLabel.textContent = 'Invio in corso...';
-  try {
-    const res = await fetch(form.action, {
-      method: 'POST',
-      headers: { 'Accept': 'application/json' },
-      body: new FormData(form)
-    });
-    if (res.ok) {
-      formSuccess.classList.add('show');
-      form.reset();
-    } else {
-      formError.classList.add('show');
+@api_router.post("/contact", response_model=ContactResponse)
+async def create_contact(payload: ContactCreate):
+    contact_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    doc = {
+        "id": contact_id,
+        "name": payload.name,
+        "email": payload.email,
+        "subject": payload.subject,
+        "message": payload.message,
+        "created_at": now,
+        "email_sent": False,
     }
-  } catch {
-    formError.classList.add('show');
-  } finally {
-    submitBtn.disabled = false;
-    submitLabel.textContent = 'Invia Messaggio';
-  }
-});
-</script>
-</body>
-</html>
-"
+    await db.contacts.insert_one(doc)
+
+    email_sent = False
+    error_msg = None
+
+    if RESEND_API_KEY:
+        try:
+            html_content = _build_html(payload.name, payload.email, payload.subject, payload.message)
+            params = {
+                "from": SENDER_EMAIL,
+                "to": [RECIPIENT_EMAIL],
+                "reply_to": payload.email,
+                "subject": f"[DevoGame Contatto] {payload.subject}",
+                "html": html_content,
+            }
+            result = await asyncio.to_thread(resend.Emails.send, params)
+            if result and result.get("id"):
+                email_sent = True
+                await db.contacts.update_one(
+                    {"id": contact_id},
+                    {"$set": {"email_sent": True, "resend_id": result.get("id")}},
+                )
+        except Exception as e:
+            error_msg = str(e)
+            logger.error(f"Failed to send email: {error_msg}")
+
+    return ContactResponse(
+        id=contact_id,
+        status="ok",
+        email_sent=email_sent,
+        message=("Messaggio inviato con successo!" if email_sent else "Messaggio ricevuto. Ti risponderemo a breve."),
+    )
+
+
+@api_router.get("/contacts", response_model=List[dict])
+async def list_contacts():
+    contacts = await db.contacts.find({}, {"_id": 0}).to_list(1000)
+    return contacts
+
+
+app.include_router(api_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    client.close()
+📁 FRONTEND
+/app/frontend/.env
+REACT_APP_BACKEND_URL=https://devogame-main.preview.emergentagent.com
+WDS_SOCKET_PORT=443
+ENABLE_HEALTH_CHECK=false
+/app/frontend/src/index.js
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "@/index.css";
+import App from "@/App";
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);
+/app/frontend/src/App.js
+import { useEffect } from "react";
+import "@/App.css";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Lenis from "@studio-freight/lenis";
+import Home from "./pages/Home";
+import { Toaster } from "./components/ui/sonner";
+
+function App() {
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+    function raf(time) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+    return () => lenis.destroy();
+  }, []);
+
+  return (
+    <div className="App noise">
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Home />} />
+        </Routes>
+      </BrowserRouter>
+      <Toaster theme="dark" position="top-right" />
+    </div>
+  );
+}
+
+export default App;
+/app/frontend/src/App.css
+.App {
+    background-color: #050505;
+    min-height: 100vh;
+}
+/app/frontend/src/index.css
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;800;900&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+    background-color: #050505;
+    color: #ffffff;
+}
+
+body {
+    margin: 0;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+}
+
+::selection { background: #2979FF; color: #fff; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #050505; }
+::-webkit-scrollbar-thumb { background: #2979FF; }
+::-webkit-scrollbar-thumb:hover { background: #448AFF; }
+
+.font-display { font-family: 'Unbounded', sans-serif; }
+.font-mono-plex { font-family: 'IBM Plex Mono', monospace; }
+
+.noise::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+.animate-marquee { animation: marquee 30s linear infinite; }
+
+.nav-link { position: relative; }
+.nav-link::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: -6px;
+    height: 1px;
+    width: 0;
+    background: #2979FF;
+    transition: width 250ms ease;
+}
+.nav-link:hover::after { width: 100%; }
+
+.grid-pattern {
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 80px 80px;
+}
+
+@layer base {
+    :root {
+        --background: 0 0% 2%;
+        --foreground: 0 0% 98%;
+        --card: 0 0% 4%;
+        --card-foreground: 0 0% 98%;
+        --popover: 0 0% 4%;
+        --popover-foreground: 0 0% 98%;
+        --primary: 217 100% 58%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 0 0% 9%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 0 0% 9%;
+        --muted-foreground: 0 0% 63.9%;
+        --accent: 217 100% 58%;
+        --accent-foreground: 0 0% 100%;
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 0 0% 15%;
+        --input: 0 0% 15%;
+        --ring: 217 100% 58%;
+        --radius: 0;
+    }
+}
+
+@layer base {
+    * { @apply border-border; }
+    body { @apply bg-background text-foreground; }
+}
+/app/frontend/src/pages/Home.jsx
+import Navbar from "../components/Navbar";
+import Hero from "../components/Hero";
+import Marquee from "../components/Marquee";
+import Games from "../components/Games";
+import Team from "../components/Team";
+import Contact from "../components/Contact";
+import Footer from "../components/Footer";
+
+export default function Home() {
+  return (
+    <main data-testid="home-page" className="relative min-h-screen bg-[#050505] text-white">
+      <Navbar />
+      <Hero />
+      <Marquee />
+      <Games />
+      <Team />
+      <Contact />
+      <Footer />
+    </main>
+  );
+}
+/app/frontend/src/lib/data.js
+export const GAMES = [
+  {
+    id: "stadium-rivals",
+    title: "Stadium Rivals",
+    category: "Calcio",
+    year: "2025",
+    status: "In sviluppo",
+    description: "Un'esperienza calcistica next-gen. Tattica, fisica realistica e atmosfere da stadio mai viste prima.",
+    image: "https://static.prod-images.emergentagent.com/jobs/4a7ee3f2-7ec3-4cea-a43a-c31c02425d28/images/f091c140e6c137e92828f14a8ada4b1ba36349622e49a6c2573e75853eeefbf2.png",
+    accent: "#2979FF",
+    span: "lg:col-span-2 lg:row-span-2",
+    code: "DG-001",
+  },
+  {
+    id: "apex-court",
+    title: "Apex Court",
+    category: "Basket",
+    year: "2025",
+    status: "Beta chiusa",
+    description: "Basket arcade con stile street. Movimenti acrobatici, tornei online e modalità carriera profonda.",
+    image: "https://static.prod-images.emergentagent.com/jobs/4a7ee3f2-7ec3-4cea-a43a-c31c02425d28/images/f091c140e6c137e92828f14a8ada4b1ba36349622e49a6c2573e75853eeefbf2.png",
+    accent: "#FF3366",
+    span: "lg:col-span-1",
+    code: "DG-002",
+  },
+  {
+    id: "velocity-circuit",
+    title: "Velocity Circuit",
+    category: "Racing",
+    year: "2026",
+    status: "Annunciato",
+    description: "Corsa simulativa su tracciati iconici, con motore fisico interno e supporto VR completo.",
+    image: "https://images.unsplash.com/photo-1743649978995-c76212449e15?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzR8MHwxfHNlYXJjaHwyfHxyYWNpbmclMjBnYW1lfGVufDB8fHx8MTc3ODE0MzA2NHww&ixlib=rb-4.1.0&q=85",
+    accent: "#2979FF",
+    span: "lg:col-span-1",
+    code: "DG-003",
+  },
+  {
+    id: "match-point",
+    title: "Match Point",
+    category: "Tennis",
+    year: "2026",
+    status: "Pre-produzione",
+    description: "Tennis competitivo. Controlli di precisione, AI avanzata e tour ufficiale virtuale.",
+    image: "https://images.unsplash.com/photo-1706675780107-7c43cc487928?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODl8MHwxfHNlYXJjaHwyfHxmb290YmFsbCUyMHN0YWRpdW0lMjBuaWdodHxlbnwwfHx8fDE3Nzc5OTcxMzl8MA&ixlib=rb-4.1.0&q=85",
+    accent: "#FF3366",
+    span: "lg:col-span-2",
+    code: "DG-004",
+  },
+];
+
+export const TEAM = [
+  {
+    name: "Gabriel Foti",
+    role: "Co-Founder · Lead Developer",
+    bio: "Architetto del motore di gioco DevoGame. Specializzato in fisica real-time e ottimizzazione performance.",
+    skills: ["Engine", "Gameplay", "Multiplayer"],
+  },
+  {
+    name: "Daniele Salerno",
+    role: "Co-Founder · Creative Director",
+    bio: "Visionario creativo dietro l'estetica dei nostri titoli. Direzione artistica, design e narrazione sportiva.",
+    skills: ["Art Direction", "Design", "Brand"],
+  },
+];
+
+export const STATS = [
+  { value: "04", label: "Titoli in produzione" },
+  { value: "02", label: "Co-fondatori" },
+  { value: "100%", label: "Made in Italy" },
+  { value: "2026", label: "Anno di fondazione" },
+];
+/app/frontend/src/components/Navbar.jsx
+import { useEffect, useState } from "react";
+import { Menu, X } from "lucide-react";
+
+const LOGO_URL = "https://customer-assets.emergentagent.com/job_devogame-main/artifacts/krm19l4i_sp.png";
+
+const LINKS = [
+  { id: "giochi", label: "Giochi" },
+  { id: "team", label: "Team" },
+  { id: "contatti", label: "Contatti" },
+];
+
+export const Navbar = () => {
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 30);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const go = (id) => {
+    setOpen(false);
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  return (
+    <header
+      data-testid="site-navbar"
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled ? "bg-black/70 backdrop-blur-xl border-b border-white/10" : "bg-transparent"
+      }`}
+    >
+      <nav className="max-w-[1400px] mx-auto px-6 lg:px-10 h-16 flex items-center justify-between">
+        <button
+          data-testid="logo-button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="flex items-center gap-3 group"
+        >
+          <img src={LOGO_URL} alt="DevoGame logo" className="w-9 h-9 object-contain" />
+          <span className="font-display font-black text-lg tracking-tight uppercase group-hover:text-[#2979FF] transition-colors">
+            DevoGame
+          </span>
+        </button>
+
+        <div className="hidden md:flex items-center gap-10">
+          {LINKS.map((l) => (
+            <button
+              key={l.id}
+              data-testid={`nav-${l.id}-link`}
+              onClick={() => go(l.id)}
+              className="nav-link font-mono-plex text-xs tracking-[0.25em] uppercase text-zinc-300 hover:text-white"
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="hidden md:block">
+          <button
+            data-testid="nav-cta-button"
+            onClick={() => go("contatti")}
+            className="font-display text-xs tracking-[0.25em] uppercase px-5 py-2.5 bg-[#2979FF] hover:bg-[#448AFF] text-white border border-[#2979FF] transition-colors"
+          >
+            Lavora con noi
+          </button>
+        </div>
+
+        <button
+          data-testid="mobile-menu-toggle"
+          className="md:hidden p-2"
+          onClick={() => setOpen((s) => !s)}
+          aria-label="Menu"
+        >
+          {open ? <X size={22} /> : <Menu size={22} />}
+        </button>
+      </nav>
+
+      {open && (
+        <div data-testid="mobile-menu" className="md:hidden bg-black/95 backdrop-blur-xl border-t border-white/10">
+          <div className="px-6 py-6 flex flex-col gap-4">
+            {LINKS.map((l) => (
+              <button
+                key={l.id}
+                data-testid={`mobile-nav-${l.id}-link`}
+                onClick={() => go(l.id)}
+                className="text-left font-display text-2xl uppercase tracking-tight"
+              >
+                {l.label}
+              </button>
+            ))}
+            <button
+              data-testid="mobile-nav-cta-button"
+              onClick={() => go("contatti")}
+              className="mt-4 font-display text-xs tracking-[0.25em] uppercase px-5 py-3 bg-[#2979FF] text-white"
+            >
+              Lavora con noi
+            </button>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+};
